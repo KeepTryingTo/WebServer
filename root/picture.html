@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>精彩内容 - WebServer</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                margin: 0;
+                padding: 0;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: #333;
+                text-align: center;
+            }
+            
+            .container {
+                background-color: white;
+                border-radius: 16px;
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+                padding: 40px;
+                width: 90%;
+                max-width: 800px;
+                animation: fadeIn 0.6s ease;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            h1 {
+                color: #4a6baf;
+                margin-bottom: 30px;
+                font-weight: 600;
+                font-size: 32px;
+                position: relative;
+                display: inline-block;
+            }
+            
+            h1::after {
+                content: "";
+                position: absolute;
+                bottom: -10px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 60px;
+                height: 3px;
+                background: linear-gradient(90deg, #4a6baf, #9c27b0);
+                border-radius: 3px;
+            }
+            
+            .image-container {
+                margin: 30px 0;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                transition: transform 0.3s ease;
+            }
+            
+            .image-container:hover {
+                transform: translateY(-5px);
+            }
+            
+            .image-container img {
+                max-width: 100%;
+                height: auto;
+                display: block;
+                border-radius: 12px;
+                transition: transform 0.3s ease;
+            }
+            
+            .image-container:hover img {
+                transform: scale(1.02);
+            }
+            
+            .caption {
+                margin-top: 20px;
+                font-style: italic;
+                color: #666;
+                font-size: 16px;
+            }
+            
+            .footer {
+                margin-top: 40px;
+                font-size: 14px;
+                color: #777;
+            }
+            
+            .footer a {
+                color: #4a6baf;
+                text-decoration: none;
+                font-weight: 500;
+            }
+            
+            .footer a:hover {
+                text-decoration: underline;
+            }
+            
+            .social-links {
+                margin-top: 30px;
+                display: flex;
+                justify-content: center;
+                gap: 20px;
+            }
+            
+            .social-links a {
+                color: white;
+                background-color: #4a6baf;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-decoration: none;
+                transition: all 0.3s ease;
+            }
+            
+            .social-links a:hover {
+                background-color: #3a5a9f;
+                transform: translateY(-3px);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>你居然想看图，不想关注我</h1>
+            
+            <div class="image-container">
+                <img src="./xxx.jpg" alt="精彩内容" title="awsl">
+            </div>
+            
+            <div class="caption">点击图片可以查看大图哦~</div>
+            
+            <div class="social-links">
+                <a href="#" title="微博">📱</a>
+                <a href="#" title="微信">💬</a>
+                <a href="#" title="B站">▶️</a>
+                <a href="#" title="抖音">🎵</a>
+            </div>
+            
+            <div class="footer">
+                喜欢这张图片吗？<a href="#">关注我获取更多精彩内容</a>
+            </div>
+        </div>
+    </body>
+</html>

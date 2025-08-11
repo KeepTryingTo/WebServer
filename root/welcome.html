@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选择 - WebServer</title>
+    <style>
+        :root {
+            --primary-color: #4a6baf;
+            --secondary-color: #6c757d;
+            --accent-color: #9c27b0;
+            --success-color: #28a745;
+            --text-color: #333;
+            --light-bg: #f5f7fa;
+        }
+        
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--light-bg) 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+        }
+        
+        .choice-container {
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 90%;
+            max-width: 500px;
+            animation: fadeIn 0.8s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .choice-title {
+            color: var(--accent-color);
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .choice-title::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-color), var(--primary-color));
+            border-radius: 3px;
+        }
+        
+        .choice-list {
+            width: 100%;
+            margin: 30px 0;
+        }
+        
+        .choice-item {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .choice-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .choice-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .choice-btn.image {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .choice-btn.image:hover {
+            background-color: #3e8e41;
+        }
+        
+        .choice-btn.image::before {
+            content: "🖼️";
+        }
+        
+        .choice-btn.video {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .choice-btn.video:hover {
+            background-color: #0b7dda;
+        }
+        
+        .choice-btn.video::before {
+            content: "🎬";
+        }
+        
+        .choice-btn.follow {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .choice-btn.follow:hover {
+            background-color: #7b1fa2;
+        }
+        
+        .choice-btn.follow::before {
+            content: "❤️";
+        }
+        
+        .choice-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: var(--secondary-color);
+        }
+        
+        .choice-divider::before,
+        .choice-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background-color: #eee;
+        }
+        
+        .choice-divider span {
+            padding: 0 15px;
+            font-size: 14px;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: var(--secondary-color);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="choice-container">
+        <h1 class="choice-title">是时候做出选择了</h1>
+        
+        <div class="choice-list">
+            <form action="5" method="post" class="choice-item">
+                <button type="submit" class="choice-btn image">查看图片</button>
+            </form>
+            
+            <form action="6" method="post" class="choice-item">
+                <button type="submit" class="choice-btn video">观看视频</button>
+            </form>
+            
+            <div class="choice-divider">
+                <span>或者</span>
+            </div>
+            
+            <form action="7" method="post" class="choice-item">
+                <button type="submit" class="choice-btn follow">关注我们</button>
+            </form>
+        </div>
+        
+        <div class="footer">
+            选择你感兴趣的内容，或直接关注获取更多精彩
+        </div>
+    </div>
+</body>
+</html>

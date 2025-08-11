@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>WebServer 控制面板</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                margin: 0;
+                padding: 0;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: #333;
+            }
+            
+            .container {
+                background-color: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                padding: 40px;
+                width: 90%;
+                max-width: 500px;
+                text-align: center;
+            }
+            
+            h1 {
+                color: #4a6baf;
+                margin-bottom: 30px;
+                font-weight: 600;
+            }
+            
+            .button-container {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                margin-top: 20px;
+            }
+            
+            button {
+                padding: 12px 24px;
+                font-size: 16px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+            
+            form {
+                width: 100%;
+            }
+            
+            button[type="submit"] {
+                width: 100%;
+                background-color: #4a6baf;
+                color: white;
+            }
+            
+            button[type="submit"]:hover {
+                background-color: #3a5a9f;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+            
+            /* 为不同按钮添加不同颜色 */
+            form:nth-child(1) button { background-color: #4CAF50; }
+            form:nth-child(1) button:hover { background-color: #3e8e41; }
+            
+            form:nth-child(2) button { background-color: #2196F3; }
+            form:nth-child(2) button:hover { background-color: #0b7dda; }
+            
+            form:nth-child(3) button { background-color: #ff9800; }
+            form:nth-child(3) button:hover { background-color: #e68a00; }
+            
+            form:nth-child(4) button { background-color: #9c27b0; }
+            form:nth-child(4) button:hover { background-color: #7b1fa2; }
+            
+            /* 添加图标（使用Unicode字符作为简单图标） */
+            button::before {
+                font-size: 18px;
+            }
+            
+            form:nth-child(1) button::before { content: "👤"; }
+            form:nth-child(2) button::before { content: "🔑"; }
+            form:nth-child(3) button::before { content: "⬆️"; }
+            form:nth-child(4) button::before { content: "⬇️"; }
+            
+            .footer {
+                margin-top: 30px;
+                font-size: 12px;
+                color: #777;
+            }
+        </style>
+    </head>  
+    <body>
+        <div class="container"> 
+            <h1>欢迎访问 WebServer</h1> 
+            
+            <div class="button-container">
+                <form action="0" method="post">
+                    <button type="submit">新用户注册</button>
+                </form>
+                
+                <form action="1" method="post">
+                    <button type="submit">已有账号登录</button>
+                </form>
+
+                <form action="8" method="get"  enctype="multipart/form-data">
+                    <button type="submit">文件上传</button>
+                </form>
+                
+                <form action="9download.html" method="get">
+                    <button type="submit">文件下载</button>
+                </form>
+            </div>
+            
+            <div class="footer">
+                © 2023 WebServer 控制面板 | 版本 1.0
+            </div>
+        </div>
+    </body>
+</html>

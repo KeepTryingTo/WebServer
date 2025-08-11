@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件下载 - WebServer</title>
+    <style>
+        :root {
+            --primary-color: #4a6baf;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+        
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+        
+        .download-container {
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            width: 90%;
+            max-width: 800px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        h2 {
+            color: var(--primary-color);
+            font-size: 28px;
+            margin-bottom: 30px;
+            font-weight: 600;
+            position: relative;
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+        }
+        
+        h2::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), #9c27b0);
+            border-radius: 3px;
+        }
+        
+        .file-list {
+            width: 100%;
+            margin: 30px 0;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            background-color: var(--light-color);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .file-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .file-name {
+            flex: 1;
+            font-size: 16px;
+            color: var(--dark-color);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .file-icon {
+            margin-right: 15px;
+            color: var(--primary-color);
+            font-size: 20px;
+        }
+        
+        .download-btn {
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .download-btn:hover {
+            background-color: #3a5a9f;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .download-btn::before {
+            content: "⬇️";
+            margin-right: 8px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--secondary-color);
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .refresh-btn {
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: var(--secondary-color);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="download-container">
+        <h2>文件列表</h2>
+        
+        <div class="file-list" id="fileList">
+            <!-- 文件列表将通过JavaScript动态加载 -->
+            <div class="empty-state">
+                <div class="empty-icon">📁</div>
+                <p>正在加载文件列表...</p>
+            </div>
+        </div>
+        
+        <button class="refresh-btn" onclick="loadFiles()">
+            <span>刷新列表</span>
+        </button>
+        
+        <div class="footer">
+            点击文件名旁边的下载按钮获取文件
+        </div>
+    </div>
+
+    <script>
+        // 根据不同单位计算当前文件大小
+        function formatFileSize(bytes) {
+            if (typeof bytes !== 'number' || bytes < 0) return '未知大小';
+            if (bytes === 0) return '0 Bytes';
+            
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const k = 1024;
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            // 保留2位小数，并添加单位
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + units[i];
+        }
+        
+        // 加载所有已上传的文件
+        function loadFiles() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = `<div class="loading">加载中...</div>`;
+            
+            fetch("/a") // 发起请求
+                .then(res => { // 处理响应
+                    if (!res.ok) throw new Error('获取列表失败: ' + res.status);
+                    return res.text(); // 先获取文本用于调试
+                })
+                .then(text => { // 处理数据
+                    console.log("服务器响应:", text);
+                    const files = JSON.parse(text);
+                    
+                    if (!Array.isArray(files)) {
+                        throw new Error('无效的文件列表格式');
+                    }
+                    
+                    fileList.innerHTML = '';
+                    if (files.length === 0) {
+                        fileList.innerHTML = '<div class="empty">暂无文件</div>';
+                        return;
+                    }
+                    
+                    files.forEach(file => {
+                        // 处理简单字符串数组或对象数组
+                        const fileInfo = {
+                            name: typeof file === 'string' ? file : file.name || '未知文件',
+                            size: file.size || 0,
+                            date: file.lastModified || file.date || '未知'
+                        };
+                        
+                        const item = document.createElement('div');
+                        item.className = 'file-item';
+                        item.innerHTML = `
+                            <div class="file-name">${fileInfo.name}</div>
+                            <div class="file-size">${formatFileSize(fileInfo.size)}</div>
+                            &nbsp;
+                            <div class="file-date">${fileInfo.date}</div>
+                            <a href="/9${encodeURIComponent(fileInfo.name)}" class="download-btn">下载</a>
+                        `;
+                        fileList.appendChild(item);
+                    });
+                })
+                .catch(err => {
+                    console.error('加载文件列表失败:', err);
+                    // 加载失败时的渲染效果
+                    fileList.innerHTML = `
+                        <div class="error">
+                            加载失败: ${err.message}
+                            <button onclick="loadFiles()">重试</button>
+                        </div>
+                    `;
+                });
+        }
+        
+        // 页面加载时自动获取文件列表
+        document.addEventListener('DOMContentLoaded', loadFiles);
+        
+        // 可选：添加刷新按钮
+        document.getElementById('refreshBtn')?.addEventListener('click', loadFiles);
+    </script>
+</body>
+</html>
