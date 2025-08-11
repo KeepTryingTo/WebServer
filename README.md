@@ -70,7 +70,7 @@ Content-Disposition: attachment    // 响应头
 ![alt text](./log/download_image.png)
 ![alt text](./log/download_browse.png)
 
-关于操作视频演示动画，请看：
+关于操作视频演示动画，请看：https://blog.csdn.net/Keep_Trying_Go/article/details/150215367
 
 Webbench压测
 =============
