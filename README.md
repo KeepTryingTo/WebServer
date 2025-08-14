@@ -26,6 +26,7 @@ Linux下C++轻量级Web服务器，助力初学者快速实践网络编程，搭
 - [√] 实现了上传文件功能
 - [√] 实现了下载文件功能
 - [√] 美化了所有界面
+- [√] 服务器生成session id和保存cookie状态，过期时间设置为30分钟
 - [x] 打开摄像头
 
 最小堆
@@ -72,6 +73,21 @@ Content-Disposition: attachment    // 响应头
 
 关于操作视频演示动画，请看：https://blog.csdn.net/Keep_Trying_Go/article/details/150215367
 
+
+服务器生成session id和保存cookie状态
+=================
+Cookie​​ 是存储在​​客户端​​（浏览器）的小型文本数据（通常有大小限制，如4KB）
+​​Session​​ 是存储在​​服务端​​的用户状态信息（大小理论上只受服务器内存限制）
+它们通常​​配合使用​​，形成这样的工作流程：
+
+* 用户首次访问 → 服务端创建Session并生成唯一Session ID
+* 服务端通过Set-Cookie将Session ID发送给浏览器
+* 浏览器后续请求自动携带这个Cookie（Session ID）
+* 服务端通过Session ID查找对应的Session数据
+
+![alt text](./log/cookie_session.png)
+![alt text](./log/cookie_session_id.png)
+
 Webbench压测
 =============
 原理:
@@ -90,7 +106,7 @@ wget http://home.tiscali.cz/~cz210552/distfiles/webbench-1.5.tar.gz
 安装：sudo make install
 
 注意：目前1.5版本的webbench支持http协议，不支持https协议。
-![alt text](./log/image.png)
+![alt text](./log/webbench_image.png)
 
 开始压测
 -------------
