@@ -2,7 +2,7 @@
 #define HTTPCONNECTION_H
 #include <unistd.h>
 #include <signal.h>
-#include <sys/types.h>
+#include <sys/types.h> 
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -18,15 +18,31 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <sys/wait.h>
-#include <sys/uio.h>
-#include <map>
+#include <sys/uio.h> 
+#include <map> 
 #include <dirent.h>  // 用于目录操作
 #include <sys/types.h> // 用于 DIR 等类型定义
+#include <time.h>
+#include <random>
+#include <array>
+#include <set>
+#include <iostream>
 
 #include "../lock/locker.h"
 #include "../CGImysql/sql_connection_pool.h"
 #include "../timer/lst_timer.h"
 #include "../log/log.h"
+
+struct session_info {
+    std::string username;
+    time_t create_time;
+    time_t last_access;
+    bool is_valid;
+
+    session_info() : create_time(0), last_access(0), is_valid(false){}
+    session_info(const std::string & user) : username(user), create_time(time(NULL)), 
+                last_access(time(NULL)), is_valid(true){} 
+};
 
 class http_conn 
 {
@@ -76,7 +92,7 @@ public:
     };
 
 public:
-    http_conn() {}
+    http_conn() {} 
     ~http_conn() {}
 
 public:
@@ -174,7 +190,7 @@ private:
     int bytes_have_send;
     char *doc_root; 
 
-    map<string, string> m_users;
+    map<std::string, std::string> m_users;
     int m_TRIGMode;
     int m_close_log;
 
@@ -183,11 +199,28 @@ private:
     char sql_name[100];
 
     std::string m_header_value;
-    char * m_method_override;
+    char * m_method_override; 
     int chunk_header;
     int total_header;
     char* m_upload_filename;
     long int m_file_size;
+
+    // session  + cookie
+    static map<std::string, session_info>sessions;
+    static locker session_lock;
+    std::string m_session_id;
+    bool m_is_logged_in;
+    char m_session_id_buf[65];
+    bool m_has_session;
+    bool m_need_set_cookie;
+    set<std::string>sessions_st;
+
+    std::string generate_session_id();
+    bool create_session(const std::string& username);
+    bool validate_session(const std::string& session_id);
+    void destroy_session(const std::string& session_id);
+    bool add_session_cookie();
+    static void cleanup_expired_sessions();
 };
 
 #endif

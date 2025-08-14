@@ -1,7 +1,7 @@
 #include "http_conn.h"
 
 #include <mysql/mysql.h>
-#include <fstream> 
+#include <fstream>  
 
 //定义http响应的一些状态信息 
 const char *ok_200_title = "OK";
@@ -18,7 +18,11 @@ const char *error_500_title = "Internal Error";
 const char *error_500_form = "There was an unusual problem serving the request file.\n";
 
 locker m_lock;
-map<string, string> users;
+map<std::string, std::string> users;
+
+// 静态成员初始化
+map<std::string, session_info> http_conn::sessions;
+locker http_conn::session_lock;
 
 void http_conn::initmysql_result(connection_pool *connPool)
 {
@@ -44,8 +48,8 @@ void http_conn::initmysql_result(connection_pool *connPool)
     //从结果集中获取下一行，将对应的用户名和密码，存入map中
     while (MYSQL_ROW row = mysql_fetch_row(result))
     {
-        string temp1(row[0]);
-        string temp2(row[1]);
+        std::string temp1(row[0]);
+        std::string temp2(row[1]);
         // 保存用户名和密码
         users[temp1] = temp2;
     }
@@ -127,7 +131,7 @@ void http_conn::close_conn(bool real_close)
 
 //初始化连接,外部调用初始化套接字地址
 void http_conn::init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMode,
-                     int close_log, string user, string passwd, string sqlname)
+                     int close_log, std::string user, std::string passwd, std::string sqlname)
 {
     m_sockfd = sockfd;
     m_address = addr;
@@ -173,10 +177,107 @@ void http_conn::init()
     improv = 0;
     m_header_value = "";
     m_upload_filename = NULL;
+    m_session_id = "";
+    m_is_logged_in = false;
+    m_has_session = false;
+    m_session_id_buf[0] = '\0';
+    m_need_set_cookie = false;
 
     memset(m_read_buf, '\0', READ_BUFFER_SIZE);
     memset(m_write_buf, '\0', WRITE_BUFFER_SIZE);
     memset(m_real_file, '\0', FILENAME_LEN);
+}
+
+std::string http_conn::generate_session_id(){
+    std::array<unsigned char, 16>bytes{};
+    std::random_device rd;
+    for(auto & b : bytes){
+        b = static_cast<unsigned char>(rd() & 0xFF);
+    }
+    
+    static const char* hex_chars = "0123456789abcdef";
+    std::string session_id;
+    session_id.resize(32);
+    for(size_t i = 0; i < bytes.size(); i++){
+        session_id[i * 2]     = hex_chars[bytes[i] >> 4];
+        session_id[i * 2 + 1] = hex_chars[bytes[i] & 0x0F];
+    }
+    return session_id;
+}
+
+bool http_conn::create_session(const std::string& username){
+    
+    session_lock.lock();
+    try {
+        
+        if(m_has_session && strlen(m_session_id_buf) > 0){
+            std::string session_id(m_session_id_buf);
+            printf("strlen(session id) = %d\n", session_id.size());
+            printf("%s %d session id = %s\n", __FILE__, __LINE__, session_id.c_str());
+            sessions[session_id] = session_info(username);
+            sessions_st.insert(session_id);
+            m_session_id = session_id; // 其实在解析头部信息的时候就赋值过了，这里只是重复的赋值一遍
+        }else{
+            std::string session_id = generate_session_id();
+            printf("%s %d session id = %s\n", __FILE__, __LINE__, session_id.c_str());
+            sessions[session_id] = session_info(username);
+            m_session_id = session_id;
+            sessions_st.insert(session_id);
+            m_has_session = true;
+            m_need_set_cookie = true;
+        }
+        session_lock.unlock();
+        return true;
+    }catch(...){
+        // std::cout<<"username = "<<username<<std::endl;
+        printf("%s %d throw ERROR and username = %s\n", __FILE__, __LINE__, username.c_str());
+        session_lock.unlock();
+        return false;
+    }
+    return false;
+}
+
+bool http_conn::validate_session(const std::string& session_id){
+    session_lock.lock();
+    auto it = sessions.find(session_id);
+    if(it != sessions.end() && it -> second.is_valid){
+        // 检查session id是否过期（是否超过规定的30分钟）
+        time_t now = time(NULL);
+        if(now - (it -> second).last_access < 1800){
+            it -> second.last_access = now;
+            session_lock.unlock();
+            return true;
+        }else{
+            // 否则删除过期的session id
+            sessions.erase(it);
+        }
+    }
+    session_lock.unlock();
+    return false;
+}
+
+void http_conn::destroy_session(const std::string& session_id){
+    session_lock.lock();
+    sessions.erase(session_id);
+    session_lock.unlock();
+
+    m_session_id = "";
+    m_is_logged_in = false;
+}
+
+// 定期清理过期的session id
+void http_conn::cleanup_expired_sessions(){
+    session_lock.lock();
+    time_t now = time(NULL);
+    auto it = sessions.begin();
+    while(it != sessions.end()){
+        if(now - (it -> second.last_access) > 1800){
+            it = sessions.erase(it);
+        }else{
+            it++;
+        }
+    }
+    session_lock.unlock();
 }
 
 //从状态机，用于分析出一行内容
@@ -343,6 +444,8 @@ http_conn::HTTP_CODE http_conn::parse_request_line(char *text)
 //解析http请求的一个头部信息
 http_conn::HTTP_CODE http_conn::parse_headers(char *text)
 {
+    // 在报文中，请求头和空行的处理使用的同一个函数，这里通过判断当前的text首位是不是\0字符，
+    // 若是，则表示当前处理的是空行，若不是，则表示当前处理的是请求头。
     if (text[0] == '\0')
     {
         if (m_content_length != 0)
@@ -413,9 +516,36 @@ http_conn::HTTP_CODE http_conn::parse_headers(char *text)
         text += strspn(text, " \t");
         m_file_size = atol(text);
         LOG_INFO("Got file size: %ld", m_file_size);
-    }
-    else
-    {
+    }else if(strncasecmp(text, "Cookie:", 7) == 0){
+        // text 形如 "Cookie: a=1; session_id=abcd...; b=2"
+        const char* p = text + 7;
+        p += strspn(p, " \t");
+        const char* sid = strcasestr(p, "session_id=");
+        if (sid) {
+            sid += 11; // 跳过 "session_id="
+            size_t n = 0;
+            while (sid[n] && sid[n] != ';' && sid[n] != ' ' && n < 64) n++;
+            // 只接受 32 位十六进制
+            if (n == 32) {
+                bool ok = true;
+                // 确保session id是合法的
+                for (size_t i = 0; i < 32; ++i) {
+                    char c = sid[i];
+                    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) { ok = false; break; }
+                }
+                if (ok) {
+                    memcpy(m_session_id_buf, sid, 32);
+                    m_session_id_buf[32] = '\0';
+                    m_has_session = true;
+                }
+            }
+        }
+        if(strlen(m_session_id_buf) > 0){
+            m_has_session = true;
+            m_session_id = std::string(m_session_id_buf);
+            sessions_st.insert(m_session_id);
+        }
+    }else{
         LOG_INFO("oop!unknow header: %s", text);
     }
     // 当前解析了头部信息，下一步需要对内容进行解析，因此这里返回的是不完整的code表示
@@ -452,7 +582,7 @@ http_conn::HTTP_CODE http_conn::process_read()
     // 默认是解析当前内容还不完整
     HTTP_CODE ret = NO_REQUEST;
     char *text = 0;
-
+    // m_check_state初始值为CHECK_STATE_REQUESTLINE
     // 需要首先是请求内容，请求行没有问题，读取完整的一行返回LINE_OK，读取的不是完整行返回LINE_OPEN，否则返回LINE_BAD
     while ((m_check_state == CHECK_STATE_CONTENT && line_status == LINE_OK) || 
             ((line_status = parse_line()) == LINE_OK))
@@ -481,6 +611,7 @@ http_conn::HTTP_CODE http_conn::process_read()
                     return BAD_REQUEST;
                 else if (ret == GET_REQUEST)
                 {
+                    // 解析完请求之后就是对浏览器（客户端）的响应
                     return do_request();
                 }
                 break;
@@ -489,8 +620,11 @@ http_conn::HTTP_CODE http_conn::process_read()
             {
                 // 解析内容
                 ret = parse_content(text);
-                if (ret == GET_REQUEST)
+                if (ret == GET_REQUEST){
+                    // 解析完请求之后就是对浏览器（客户端）的响应
                     return do_request();
+                }
+                    
                 line_status = LINE_OPEN;
                 break;
             }
@@ -724,7 +858,28 @@ http_conn::HTTP_CODE http_conn::do_request()
     printf("method override: %s\n", m_method_override);
     printf("URL: %s\n", m_url);
     printf("Content-Length: %d\n", m_content_length);
+    printf("has session: %d\n", m_has_session);
     printf("--------------------------------------------------\n");
+
+    // 如果是携带了cookie的请求，首先进行校验
+    if(m_has_session && sessions.find(m_session_id) != sessions.end()) {
+        std::string session_id(m_session_id_buf);
+        printf("%s %d session id = %s\n", __FILE__, __LINE__, m_session_id.c_str());
+        if(validate_session(session_id)) {
+            m_is_logged_in = true;
+        } else {
+            // 验证失败时的处理
+            m_is_logged_in = false;
+            // 1. 清除无效的session
+            destroy_session(session_id);
+            // 2. 清除客户端的cookie (设置过期时间为过去)
+            add_response("Set-Cookie: session_id=; Path=/; Expires=Thu, 01-Jan-1970 00:00:00 GMT\r\n");
+            // 3. 可以重定向到登录页面并显示提示信息
+            strcpy(m_url, "/logError.html");
+            // 4. 记录日志
+            LOG_INFO("Invalid session attempt: %s", session_id.c_str());
+        }
+    }
 
 
     // 在do_request()的最前面添加上传文件：
@@ -797,7 +952,7 @@ http_conn::HTTP_CODE http_conn::do_request()
             {
                 m_lock.lock();
                 int res = mysql_query(mysql, sql_insert);
-                users.insert(pair<string, string>(name, password));
+                users.insert(pair<std::string, std::string>(name, password));
                 m_lock.unlock();
 
                 // 判断当前是否请求成功，请求成功就进入登录界面
@@ -813,13 +968,24 @@ http_conn::HTTP_CODE http_conn::do_request()
         //若浏览器端输入的用户名和密码在表中可以查找到，返回1，否则返回0
         else if (*(p + 1) == '2')
         {
-            if (users.find(name) != users.end() && users[name] == password)
-                strcpy(m_url, "/welcome.html");
-            else
+            // if (users.find(name) != users.end() && users[name] == password)
+            //     strcpy(m_url, "/welcome.html");
+            // else
+            //     strcpy(m_url, "/logError.html");
+            
+            if(users.find(name) != users.end() && users[name] == password){
+                // 登录成功，创建session id
+                if(create_session(name)){
+                    printf("%s %d session id = %s\n", __FILE__, __LINE__, m_session_id.c_str());
+                    strcpy(m_url, "/welcome.html");
+                }else {
+                    strcpy(m_url, "/logError.html");
+                }
+            }else{
                 strcpy(m_url, "/logError.html");
+            }
         }
     }
-
     if (*(p + 1) == '0')
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
@@ -837,7 +1003,7 @@ http_conn::HTTP_CODE http_conn::do_request()
 
         free(m_url_real);
     }
-    else if (*(p + 1) == '5')
+    else if (*(p + 1) == '5' && m_is_logged_in)
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
         strcpy(m_url_real, "/picture.html");
@@ -845,7 +1011,7 @@ http_conn::HTTP_CODE http_conn::do_request()
 
         free(m_url_real);
     }
-    else if (*(p + 1) == '6')
+    else if (*(p + 1) == '6' && m_is_logged_in)
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
         strcpy(m_url_real, "/video.html");
@@ -853,7 +1019,7 @@ http_conn::HTTP_CODE http_conn::do_request()
 
         free(m_url_real);
     }
-    else if (*(p + 1) == '7')
+    else if (*(p + 1) == '7' && m_is_logged_in)
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
         strcpy(m_url_real, "/fans.html");
@@ -943,9 +1109,24 @@ http_conn::HTTP_CODE http_conn::do_request()
         add_status_line(200, ok_200_title);
         add_headers(json.size());
         add_content(json.c_str());
+    } else if(*(p + 1) == 'b'){
+        // 添加一个登出功能，添加登出路由(既然登出之后，那么对应的cookie也就没有必要保存了)
+        if(!m_session_id.empty()){
+            // 销毁session并清除cookie
+            destroy_session(m_session_id);
+            // 添加清除cookie的头部
+            add_response("Set-Cookie: session_id=; Path=/; Expires=Thu, 01-Jan 1970 00:00:00 GMT\r\n");
+        }
+        strcpy(m_url, "/log.html");
+        char * m_url_real = (char *)malloc(sizeof(char) * 200);
+        strcpy(m_url_real, "/log.html");
+        strncpy(m_real_file + len, m_url_real, FILENAME_LEN - len - 1);
+        free(m_url_real);
     }
     else
         strncpy(m_real_file + len, m_url, FILENAME_LEN - len - 1);
+
+    printf("%s %d session id = %s\n", __FILE__, __LINE__, m_session_id.c_str());
 
     //如果stat()返回负数（通常为-1），表示文件不存在或不可访问，返回NO_RESOURCE错误
     if (stat(m_real_file, &m_file_stat) < 0)
@@ -1147,6 +1328,11 @@ bool http_conn::process_write(HTTP_CODE ret)
             if(m_upload_filename != NULL){
                 add_content_disposition(m_upload_filename);
                 m_upload_filename = NULL;
+            }
+            // 只有当浏览器第一次请求的消息中没有cookie时，服务器会生成一个cookie，那么这个时候就需要去设置cookie
+            if(m_need_set_cookie){
+                add_response("Set-Cookie: session_id=%s; Path=/; HttpOnly; SamaSite=Lax\r\n", m_session_id.c_str());
+                m_need_set_cookie = false;
             }
             // 文件大小不为0（确实有信息需要发送）
             if (m_file_stat.st_size != 0)
