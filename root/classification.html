@@ -460,7 +460,8 @@
                     model: headers.get('X-Model-Used'),
                     predictions: [{
                         class: headers.get('X-Top-Class'),
-                        confidence: parseFloat(headers.get('X-Confidence'))
+                        confidence: parseFloat(headers.get('X-Confidence')),
+                        inference_time: parseFloat(headers.get('X-Inference-Time'))
                     }]
                 };
 
@@ -560,11 +561,14 @@
             if (data.predictions && data.predictions.length > 0) {
                 data.predictions.forEach(pred => {
                     const percentage = (pred.confidence * 100).toFixed(1);
+                    const inference_time = (pred.inference_time).toFixed(3);
                     resultHTML += `
                         <div class="prediction-item">
                             <span class="class-name">预测的类别 : ${pred.class}</span>
                             <br>
                             <span class="confidence">confidence = ${percentage}%</span>
+                            <br>
+                            <span class="confidence">inference time = ${inference_time}ms</span>
                             <br>
                             <div class="progress-bar-container">
                                 <div class="prediction-progress" style="width: ${percentage}%"></div>
