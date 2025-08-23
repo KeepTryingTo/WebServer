@@ -223,6 +223,16 @@ Requests: 211143 susceed, 0 failed.
 
 和原作者测试的结果比起来结果还变差了，我感觉改进的最小堆思路应该是没有什么问题，可能是没有做什么优化，我在实现最小那部分的时候对于构建堆，删除元素以及堆的调整都是采用原始堆的思想，完全没有做什么性能上的优化，但是可以给大家提供一个思路去学习。
 
+参考链接
+-----------------
+[QT 6.6.0 基于OpenCV加载.pth模型文件转换之后的ONNX模型文件，并且实现图像分类](https://mydreamambitious.blog.csdn.net/article/details/141180470?spm=1011.2415.3001.5331)
+
+[QT 6.6.0 基于OpenCV中的cv::dnn::ClassificationModel实现图像分类](https://mydreamambitious.blog.csdn.net/article/details/141230843?spm=1011.2415.3001.5331)
+
+[yolov5目标检测和QT 6.6.0 基于OpenCV加载yolov5.onnx模型文件实现目标检测](https://mydreamambitious.blog.csdn.net/article/details/141291726?spm=1011.2415.3001.5331)
+
+[FCN图像分割和QT 6.6.0 加载分割FCN_Resnet50.ONNX模型文件进行图像分割（过程详解）](https://mydreamambitious.blog.csdn.net/article/details/141304048?spm=1011.2415.3001.5331)
+
 
 庖丁解牛（来自原文）
 ------------
