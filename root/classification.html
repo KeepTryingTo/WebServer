@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能图像分析系统</title>
+    <style>
+        :root {
+            --primary-color: #4a6baf;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--dark-color);
+            margin: 20px 0 30px;
+            font-size: 2.2em;
+            grid-column: 1 / -1;
+        }
+
+        h2 {
+            color: var(--dark-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light-color);
+        }
+
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .drop-area {
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .drop-area:hover,
+        .drop-area.highlight {
+            border-color: var(--primary-color);
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .upload-icon {
+            width: 60px;
+            margin-bottom: 15px;
+            opacity: 0.7;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .file-info {
+            margin-top: 20px;
+            padding: 12px;
+            background: var(--light-color);
+            border-radius: 8px;
+            display: none;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .status-success {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-error {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger-color);
+        }
+
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .preview-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .result-container {
+            margin-top: 20px;
+        }
+
+        .prediction-item {
+            display: flex;
+            flex-direction: column;
+            /* 改为垂直排列 */
+            gap: 8px;
+            /* 元素间添加间距 */
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            /* 进度条宽度占满容器 */
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .confidence {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+
+        .prediction-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>智能图像分析系统</h1>
+
+        <!-- 左侧面板：图像上传和分析 -->
+        <div class="panel">
+            <h2>图像分析</h2>
+
+            <div class="upload-container">
+                <div class="drop-area" id="dropArea">
+                    <img src="https://cdn-icons-png.flaticon.com/512/109/109612.png" alt="上传图标" class="upload-icon">
+                    <p>拖拽图片到此处或点击选择文件</p>
+                </div>
+
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                <button class="btn" id="uploadBtn">选择图片</button>
+                <button class="btn btn-secondary" id="cancelBtn" style="display: none;">取消上传</button>
+            </div>
+
+            <div class="model-selector">
+                <label for="modelSelect">
+                    <h3>选择分析模型：</h3>
+                </label>
+                <select id="modelSelect">
+                    <!-- 注意这里value是真正的模型名称，服务端根据该value从指定权重文件夹下面选择模型进行识别 -->
+                    <option value="best_0.793">MyModel (轻量版)</option>
+                    <option value="resnet50">ResNet-50 (高精度)</option>
+                    <option value="efficientnet">EfficientNet (平衡型)</option>
+                    <option value="custom">自定义模型...</option>
+                </select>
+                <div class="model-info" id="modelDesc">
+                    MyModel: 适用于移动设备的轻量模型（10MB），识别常见物体
+                </div>
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在分析图片...</p>
+            </div>
+
+            <div class="preview-container">
+                <img id="imagePreview" alt="预览图">
+            </div>
+
+            <div class="result-container">
+                <div id="result"></div>
+            </div>
+        </div>
+
+        <!-- 右侧面板：网络请求分析 -->
+        <div class="panel">
+            <h2>网络请求分析</h2>
+            <div id="networkAnalysis">
+                <!-- 内容将通过JavaScript动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置和状态
+        const MODEL_DESCRIPTIONS = {
+            mymodel: "MyModel: 适用于移动设备的轻量模型（10MB），识别常见物体",
+            resnet50: "ResNet-50: 经典深度模型（100MB），识别精度高",
+            efficientnet: "EfficientNet: 精度与速度的平衡（50MB）",
+            custom: "自定义模型路径，需在服务器配置"
+        };
+
+        // DOM元素
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const dropArea = document.getElementById('dropArea');
+        const modelSelect = document.getElementById('modelSelect');
+        const modelDesc = document.getElementById('modelDesc');
+        const imagePreview = document.getElementById('imagePreview');
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // 上传控制变量
+        let uploadController = null;
+        let uploadInterval = null;
+        let isUploading = false;
+
+        // 初始化事件监听
+        function initEventListeners() {
+            // 模型选择变化
+            modelSelect.addEventListener('change', function () {
+                modelDesc.textContent = MODEL_DESCRIPTIONS[this.value] || '未知模型';
+            });
+
+            // 文件选择相关事件（修复点击无响应问题）
+            dropArea.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            uploadBtn.addEventListener('click', () => {
+                if (fileInput.files.length > 0) {
+                    uploadFile();
+                } else {
+                    fileInput.click();
+                }
+            });
+
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // 取消上传
+            cancelBtn.addEventListener('click', cancelUpload);
+
+            // 拖拽相关事件
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
+            });
+
+            dropArea.addEventListener('drop', handleDrop, false);
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            const file = files[0];
+            if (!file.type.match('image.*')) {
+                alert('请选择图片文件！');
+                return;
+            }
+
+            // 显示预览
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                resultDiv.style.display = 'none';
+                uploadBtn.textContent = '开始上传';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 处理文件拖放
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length) {
+                fileInput.files = files;
+                handleFileSelect({ target: { files } });
+            }
+        }
+
+        // 上传文件（分块版本）- 完全保留您指定的headers配置
+        function uploadFile() {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('请先选择文件！');
+                return;
+            }
+
+            // 获取选择的模型
+            const model = modelSelect.value;
+
+            // 更新UI状态
+            uploadBtn.disabled = true;
+            cancelBtn.style.display = 'inline-block';
+            progressContainer.style.display = 'block';
+            statusMessage.style.display = 'none';
+            loadingDiv.style.display = 'block';
+
+            // 初始化AbortController
+            uploadController = new AbortController();
+            isUploading = true;
+
+            // 分块大小设置（1MB）
+            const CHUNK_SIZE = 1024;
+            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            let uploadedChunks = 0;
+
+            // 进度条动画
+            clearInterval(uploadInterval);
+            uploadInterval = setInterval(() => {
+                const baseProgress = (uploadedChunks / totalChunks) * 90;
+                const progress = Math.min(baseProgress + (Math.random() * 5), 100);
+                progressBar.style.width = progress + '%';
+            }, 200);
+
+            // 专门处理最终响应
+            async function processFinalResponse(response) {
+                // 添加延迟以确保服务端处理完成（可选安全措施）
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const headers = response.headers;
+
+                // 检查服务端是否已完成处理
+                if (!headers.has('X-Top-Class')) {
+                    // 如果头信息不存在，说明服务端还在处理中
+                    throw new Error('服务端仍在处理中，请稍后重试');
+                }
+
+                // 提取并显示结果
+                const result = {
+                    model: headers.get('X-Model-Used'),
+                    predictions: [{
+                        class: headers.get('X-Top-Class'),
+                        confidence: parseFloat(headers.get('X-Confidence'))
+                    }]
+                };
+
+                displayResult(result);
+            }
+
+            // 分块上传函数
+            const uploadChunk = async (chunkNumber) => {
+                const start = chunkNumber * CHUNK_SIZE;
+                const end = Math.min(file.size, start + CHUNK_SIZE);
+                const chunk = file.slice(start, end);
+
+                console.log(`http://${window.location.host}/10${encodeURIComponent(file.name)}`);
+                try {
+                    const response = await fetch(`http://${window.location.host}/10${encodeURIComponent(file.name)}`, {
+                        method: "POST",
+                        body: chunk,
+                        headers: {
+                            "Content-Type": "application/octet-stream",
+                            "X-HTTP-Method-Override": "PUT",
+                            "X-File-Name": encodeURIComponent(file.name),
+                            "X-Model-Type": model,
+                            "X-Chunk-Number": chunkNumber,
+                            "X-Total-Chunks": totalChunks,
+                            "X-File-Size": file.size.toString()
+                        },
+                        signal: uploadController.signal
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`分块 ${chunkNumber + 1}/${totalChunks} 上传失败`);
+                    }
+
+                    uploadedChunks++;
+                    console.log('uploadedChunks = ' + uploadedChunks);
+
+                    // 所有块上传完成
+                    if (uploadedChunks >= totalChunks) {
+                        clearInterval(uploadInterval);
+                        progressBar.style.width = '100%';
+                        statusMessage.textContent = '文件上传成功！';
+                        statusMessage.className = 'status-message status-success';
+                        // 获取最终分析结果
+
+                        // 等待服务端处理完成（响应头已包含结果）
+                        await processFinalResponse(response);
+
+                        statusMessage.textContent = '文件上传分析完成！';
+                        statusMessage.className = 'status-message status-success';
+                        statusMessage.style.display = 'block';
+                    }
+
+                    // 上传下一个块
+                    if (chunkNumber < totalChunks - 1) {
+                        return uploadChunk(chunkNumber + 1);
+                    }
+
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('上传错误:', err);
+                        clearInterval(uploadInterval);
+                        statusMessage.textContent = err.message || '上传失败';
+                        statusMessage.className = 'status-message status-error';
+                        statusMessage.style.display = 'block';
+                    }
+                    throw err;
+                }
+            };
+
+            // 开始上传第一个块
+            uploadChunk(0)
+                .catch(() => { })
+                .finally(() => {
+                    isUploading = false;
+                    uploadBtn.disabled = false;
+                    cancelBtn.style.display = 'none';
+                    loadingDiv.style.display = 'none';
+                    uploadController = null;
+                });
+        }
+
+        // 取消上传
+        function cancelUpload() {
+            if (uploadController) {
+                uploadController.abort();
+                statusMessage.textContent = '上传已取消';
+                statusMessage.className = 'status-message status-error';
+                statusMessage.style.display = 'block';
+            }
+        }
+
+        // 显示分析结果
+        function displayResult(data) {
+            let resultHTML = `
+                <h3>识别结果（使用模型: ${data.model}）</h3>`;
+
+            if (data.predictions && data.predictions.length > 0) {
+                data.predictions.forEach(pred => {
+                    const percentage = (pred.confidence * 100).toFixed(1);
+                    resultHTML += `
+                        <div class="prediction-item">
+                            <span class="class-name">预测的类别 : ${pred.class}</span>
+                            <br>
+                            <span class="confidence">confidence = ${percentage}%</span>
+                            <br>
+                            <div class="progress-bar-container">
+                                <div class="prediction-progress" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                resultHTML += `<p>未识别到有效结果</p>`;
+            }
+
+            resultDiv.innerHTML = resultHTML;
+            resultDiv.style.display = 'block';
+        }
+
+        // 初始化应用
+        function initApp() {
+            initEventListeners();
+            console.log('系统初始化完成');
+        }
+
+        // 启动应用
+        initApp();
+    </script>
+</body>
+
+</html>
