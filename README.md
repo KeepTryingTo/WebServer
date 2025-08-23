@@ -232,7 +232,7 @@ Requests: 211143 susceed, 0 failed.
 [yolov5目标检测和QT 6.6.0 基于OpenCV加载yolov5.onnx模型文件实现目标检测](https://mydreamambitious.blog.csdn.net/article/details/141291726?spm=1011.2415.3001.5331)
 
 [FCN图像分割和QT 6.6.0 加载分割FCN_Resnet50.ONNX模型文件进行图像分割（过程详解）](https://mydreamambitious.blog.csdn.net/article/details/141304048?spm=1011.2415.3001.5331)
-
+[TinyWebServer-v2服务器增加上传和下载文件功能，最小堆代替双链表，界面美化以及服务器生成session id，浏览器保存cookie以及图像分类实现（C/C++）](https://mydreamambitious.blog.csdn.net/article/details/150215367?spm=1011.2415.3001.5331)
 
 庖丁解牛（来自原文）
 ------------
