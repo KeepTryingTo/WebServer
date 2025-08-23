@@ -27,7 +27,8 @@ Linux下C++轻量级Web服务器，助力初学者快速实践网络编程，搭
 - [√] 实现了下载文件功能
 - [√] 美化了所有界面
 - [√] 服务器生成session id和保存cookie状态，过期时间设置为30分钟
-- [x] 打开摄像头
+- [x] 浏览器调用摄像头
+- [×] 图像分类系统
 
 最小堆
 =============
@@ -48,8 +49,8 @@ Linux下C++轻量级Web服务器，助力初学者快速实践网络编程，搭
 * 除了后端逻辑实现部分之外，还需要注意前端部分的实现，哪怕借助AI也需要非常小心和大量的调整。
 * 前端部分除了实现upload.html页面之外，还需要考虑分块上传文件的过程，这部分涉及HTML,CSS以及JavaScript知识点，大家可以去了解一下，我也边写同时借助AI来了解。
 
-![alt text](./log/upload_image.png)
-![alt text](./log/upload_browse.png)
+![alt text](./images/upload_image.png)
+![alt text](./images/upload_browse.png)
 
 下载文件
 =============
@@ -68,8 +69,8 @@ Content-Disposition: attachment    // 响应头
 &lt;html&gt;...&lt;/html&gt;        // 响应体
 ```
 
-![alt text](./log/download_image.png)
-![alt text](./log/download_browse.png)
+![alt text](./images/download_image.png)
+![alt text](./images/download_browse.png)
 
 关于操作视频演示动画，请看：https://blog.csdn.net/Keep_Trying_Go/article/details/150215367
 
@@ -85,8 +86,90 @@ Cookie​​ 是存储在​​客户端​​（浏览器）的小型文本数�
 * 浏览器后续请求自动携带这个Cookie（Session ID）
 * 服务端通过Session ID查找对应的Session数据
 
-![alt text](./log/cookie_session.png)
-![alt text](./log/cookie_session_id.png)
+![alt text](./images/cookie_session.png)
+![alt text](./images/cookie_session_id.png)
+
+编译OpenCV4.5.5
+=========================
+下载依赖库
+-------------------------
+```
+sudo apt update && sudo apt upgrade -y
+```
+
+安装编译器和构建工具
+
+```
+sudo apt install -y build-essential cmake git pkg-config libgtk-3-dev
+```
+
+安装图像和视频库
+
+```
+sudo apt install -y libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev
+
+sudo apt install -y libjpeg-dev libpng-dev libtiff-dev gfortran openexr libatlas-base-dev
+```
+
+安装可选依赖（强烈推荐）
+
+```
+sudo apt install -y libtbb2 libtbb-dev libdc1394-22-dev libopenexr-dev
+```
+
+源码下载和编译
+-------------------
+opencv官网：
+https://github.com/opencv
+https://opencv.org/releases/page/2/
+
+OpenCV4.5.5下载：https://github.com/opencv/opencv/tree/4.5.5
+
+OpenCV-Contrib4.5.5（contrib 包含额外的模块）下载：https://github.com/opencv/opencv_contrib/tree/4.5.5
+
+注：下载之后将其上传指定的服务器（位置随便），然后进行解压unzip 文件名.zip
+
+第一步：CMake配置构建
+```
+cmake -D CMAKE_BUILD_TYPE=RELEASE \
+      -D CMAKE_INSTALL_PREFIX=/usr/local \
+      -D INSTALL_C_EXAMPLES=ON \
+      -D INSTALL_PYTHON_EXAMPLES=ON \
+      -D OPENCV_GENERATE_PKGCONFIG=ON \ 
+      -D OPENCV_EXTRA_MODULES_PATH=/home/ubuntu/Documents/KTG/myPro/myProject/myTinyWebServer-v2/opencv_build/opencv_contrib/modules \
+      -D BUILD_EXAMPLES=ON \ 
+      -D WITH_GTK=ON \
+      -D WITH_FFMPEG=ON \ 
+      -D BUILD_opencv_python3=ON \
+      -D BUILD_opencv_python2=OFF \
+      ..
+```
+
+第二步：编译
+
+开始编译，使用所有可用的CPU核心:
+```
+make -j$(nproc)
+```
+
+第三步：安装
+
+编译完成后，安装到系统目录 (需要sudo权限):
+```
+sudo make install
+```
+
+最后，更新动态链接库缓存：
+```
+sudo ldconfig
+```
+
+验证OpenCV是否安装成功：
+```
+pkg-config --modversion opencv4
+# 如果成功，应该输出 4.5.5
+```
+[Linux下编写C++程序导入opencv编译并执行的几种方式（Linux/C++/OpenCV）](https://mydreamambitious.blog.csdn.net/article/details/148350287?spm=1011.2415.3001.5331)
 
 Webbench压测
 =============
@@ -106,7 +189,7 @@ wget http://home.tiscali.cz/~cz210552/distfiles/webbench-1.5.tar.gz
 安装：sudo make install
 
 注意：目前1.5版本的webbench支持http协议，不支持https协议。
-![alt text](./log/webbench_image.png)
+![alt text](./images/webbench_image.png)
 
 开始压测
 -------------
