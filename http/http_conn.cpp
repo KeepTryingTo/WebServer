@@ -1597,6 +1597,7 @@ bool http_conn::process_write(HTTP_CODE ret)
                 add_response("X-Model-Used:%s\r\n", model_name);
                 add_response("X-Top-Class:%s\r\n", g_cls.getPredResult().c_str());
                 add_response("X-Confidence:%s\r\n", std::to_string(g_cls.getPredProb()).c_str());
+                add_response("X-Inference-Time:%s\r\n", std::to_string(g_cls.getInferTime()).c_str());
 
                 // 5. 可选：添加调试信息
                 add_response("X-Predictions-Count:%s\r\n", "1");
