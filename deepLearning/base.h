@@ -28,7 +28,7 @@ public:
     Base(const Base &base);
     Base &operator=(const Base &base);
 
-    ~Base() {}
+    virtual ~Base() {}
 
     void setImagePath(const std::string &imagepath)
     {

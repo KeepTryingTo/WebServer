@@ -34,6 +34,8 @@ Base &Base::operator=(const Base &base)
     this->batch_n = base.batch_n;
     this->img_height = base.img_height;
     this->img_width = base.img_width;
+
+    return *this;
 }
 
 void Base::openImage()
