@@ -43,6 +43,8 @@ Classification &Classification::operator=(const Classification &cls)
     pred_prob = cls.pred_prob;
     pred_results = cls.pred_results;
     indexMapName = cls.indexMapName;
+
+    return *this;
 }
 
 cv::Mat Classification::createBatch(cv::Mat &img)
