@@ -1,47 +1,122 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>欢迎关注 - 两猿社</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4a6baf;
-            --secondary-color: #6c757d;
-            --accent-color: #9c27b0;
-            --text-color: #333;
-            --light-bg: #f5f7fa;
+            --primary-color: #ff7e5f;
+            --secondary-color: #feb47b;
+            --accent-color: #ff6b6b;
+            --text-color: #553c3c;
+            --light-bg: #fff9f5;
         }
-        
-        body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, var(--light-bg) 0%, #c3cfe2 100%);
+
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            margin: 0;
+            padding: 20px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             color: var(--text-color);
-            text-align: center;
         }
-        
+
+        /* 控制面板样式 */
+        .header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px 25px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 15px;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 126, 95, 0.1);
+            color: var(--primary-color);
+        }
+
+        /* 欢迎容器样式 */
         .welcome-container {
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.92);
             border-radius: 16px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
             padding: 40px;
-            width: 90%;
+            width: 100%;
             max-width: 600px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
             animation: fadeIn 0.8s ease;
         }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        .welcome-container::before {
+            content: "";
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.1) 0%, rgba(254, 180, 123, 0.1) 100%);
+            z-index: -1;
+            border-radius: 20px;
         }
-        
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .welcome-title {
             color: var(--accent-color);
             font-size: 32px;
@@ -50,76 +125,114 @@
             position: relative;
             display: inline-block;
         }
-        
+
         .welcome-title::after {
             content: "";
             position: absolute;
-            bottom: -8px;
+            bottom: -10px;
             left: 50%;
             transform: translateX(-50%);
             width: 80px;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent-color), var(--primary-color));
-            border-radius: 3px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 4px;
         }
-        
+
         .welcome-message {
             font-size: 18px;
             line-height: 1.6;
             margin-bottom: 30px;
-            color: #555;
+            color: var(--text-color);
+            opacity: 0.9;
         }
-        
+
         .highlight {
             color: var(--accent-color);
             font-weight: 600;
         }
-        
+
         .image-container {
             margin: 30px 0;
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s ease;
+            position: relative;
+            cursor: pointer;
         }
-        
+
         .image-container:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
         }
-        
+
+        .image-container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.2) 0%, rgba(254, 180, 123, 0.2) 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 1;
+        }
+
+        .image-container:hover::before {
+            opacity: 1;
+        }
+
         .image-container img {
             max-width: 100%;
             height: auto;
             display: block;
-            border-radius: 12px;
+            border-radius: 16px;
+            transition: transform 0.5s ease;
         }
-        
+
+        .image-container:hover img {
+            transform: scale(1.05);
+        }
+
         .qr-code {
             margin: 25px auto;
             width: 180px;
             height: 180px;
-            background-color: #f8f9fa;
+            background-color: var(--light-bg);
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 14px;
-            color: #777;
+            color: var(--text-color);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
         }
-        
+
+        .qr-code::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.1) 0%, rgba(254, 180, 123, 0.1) 100%);
+        }
+
         .social-links {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
+            gap: 25px;
+            margin-top: 40px;
+            flex-wrap: wrap;
         }
-        
+
         .social-link {
-            width: 50px;
-            height: 50px;
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
-            background-color: var(--primary-color);
             color: white;
             display: flex;
             align-items: center;
@@ -127,65 +240,203 @@
             font-size: 24px;
             text-decoration: none;
             transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
         }
-        
+
+        .social-link::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(255, 255, 255, 0.2), transparent);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
         .social-link:hover {
-            transform: translateY(-5px) scale(1.1);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
-        
-        .social-link.wechat { background-color: #07C160; }
-        .social-link.weibo { background-color: #E6162D; }
-        .social-link.bilibili { background-color: #FB7299; }
-        .social-link.douyin { background-color: #000; }
-        
+
+        .social-link:hover::before {
+            transform: translateY(0);
+        }
+
+        .social-link i {
+            transition: transform 0.3s ease;
+        }
+
+        .social-link:hover i {
+            transform: scale(1.2);
+        }
+
+        .social-link.wechat {
+            background: linear-gradient(135deg, #07C160, #05a14e);
+        }
+
+        .social-link.weibo {
+            background: linear-gradient(135deg, #E6162D, #c41227);
+        }
+
+        .social-link.bilibili {
+            background: linear-gradient(135deg, #FB7299, #e65a80);
+        }
+
+        .social-link.douyin {
+            background: linear-gradient(135deg, #000, #333);
+        }
+
         .footer {
-            margin-top: 30px;
+            margin-top: 40px;
             font-size: 14px;
-            color: var(--secondary-color);
+            color: var(--text-color);
+            padding: 15px 25px;
+            background-color: var(--light-bg);
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
         }
-        
+
+        .footer:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
         .heart {
-            color: #ff4444;
+            color: var(--accent-color);
             animation: heartbeat 1.5s infinite;
             display: inline-block;
         }
-        
+
         @keyframes heartbeat {
-            0% { transform: scale(1); }
-            25% { transform: scale(1.1); }
-            50% { transform: scale(1); }
-            75% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            25% {
+                transform: scale(1.1);
+            }
+
+            50% {
+                transform: scale(1);
+            }
+
+            75% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .welcome-container {
+                padding: 30px 20px;
+            }
+
+            .welcome-title {
+                font-size: 28px;
+            }
+
+            .social-links {
+                gap: 15px;
+            }
+
+            .social-link {
+                width: 50px;
+                height: 50px;
+                font-size: 22px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .welcome-title {
+                font-size: 24px;
+            }
+
+            .welcome-message {
+                font-size: 16px;
+            }
+
+            .social-link {
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
         }
     </style>
 </head>
+
 <body>
+    <!-- 顶部导航栏 -->
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-server"></i>
+            <span>WebServer 控制面板</span>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link"><i class="fas fa-home"></i> 首页</a>
+            <a href="8" class="nav-link"><i class="fas fa-upload"></i> 文件上传</a>
+            <a href="9download.html" class="nav-link"><i class="fas fa-download"></i> 文件下载</a>
+            <a href="10" class="nav-link"><i class="fas fa-robot"></i> 图像分类</a>
+            <a href="11" class="nav-link"><i class="fas fa-robot"></i> 目标检测</a>
+        </div>
+    </div>
+
+    <!-- 欢迎内容 -->
     <div class="welcome-container">
         <h1 class="welcome-title">嘿嘿，你来啦！</h1>
-        
+
         <p class="welcome-message">
             更多精彩内容，请关注 <span class="highlight">"两猿社"</span> 喔 <span class="heart">❤️</span>
         </p>
-        
+
         <div class="image-container">
             <img src="./test1.jpg" alt="两猿社精彩内容" title="awsl">
         </div>
-        
+
         <div class="qr-code">
             [ 扫码关注公众号 ]
         </div>
-        
+
         <div class="social-links">
-            <a href="#" class="social-link wechat" title="微信公众号">📱</a>
-            <a href="#" class="social-link weibo" title="微博">🧣</a>
-            <a href="#" class="social-link bilibili" title="哔哩哔哩">▶️</a>
-            <a href="#" class="social-link douyin" title="抖音">🎵</a>
-        </div>
-        
-        <div class="footer">
-            关注我们，获取更多有趣内容和独家资源
+            <a href="#" class="social-link wechat" title="微信公众号">
+                <i class="fab fa-weixin"></i>
+            </a>
+            <a href="#" class="social-link weibo" title="微博">
+                <i class="fab fa-weibo"></i>
+            </a>
+            <a href="#" class="social-link bilibili" title="哔哩哔哩">
+                <i class="fab fa-bilibili"></i>
+            </a>
+            <a href="#" class="social-link douyin" title="抖音">
+                <i class="fab fa-tiktok"></i>
+            </a>
         </div>
     </div>
+
+    <div class="footer">
+        关注我们，获取更多有趣内容和独家资源
+    </div>
 </body>
+
 </html>

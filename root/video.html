@@ -1,23 +1,71 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>精彩视频 - 两猿社</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4a6baf;
-            --secondary-color: #6c757d;
-            --accent-color: #9c27b0;
-            --text-color: #333;
-            --light-bg: #f5f7fa;
+            --primary-color: #ff7e5f;
+            --secondary-color: #feb47b;
+            --accent-color: #ff6b6b;
+            --text-color: #553c3c;
+            --light-bg: #fff9f5;
         }
-        
+
+        /* 控制面板头部样式 */
+        .header {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px 25px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 15px;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 126, 95, 0.1);
+            color: var(--primary-color);
+        }
+
         body {
             font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, var(--light-bg) 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
             margin: 0;
-            padding: 0;
+            padding: 20px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -26,31 +74,52 @@
             color: var(--text-color);
             text-align: center;
         }
-        
+
         .video-container {
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.92);
             border-radius: 16px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
             padding: 40px;
             width: 90%;
             max-width: 1000px;
             animation: fadeIn 0.8s ease;
+            position: relative;
+            overflow: hidden;
         }
-        
+
+        .video-container::before {
+            content: "";
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.1) 0%, rgba(254, 180, 123, 0.1) 100%);
+            z-index: -1;
+            border-radius: 20px;
+        }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        
+
         .video-title {
             color: var(--accent-color);
             font-size: 32px;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 20px;
             position: relative;
             display: inline-block;
         }
-        
+
         .video-title::after {
             content: "";
             position: absolute;
@@ -62,88 +131,102 @@
             background: linear-gradient(90deg, var(--accent-color), var(--primary-color));
             border-radius: 3px;
         }
-        
+
         .video-message {
             font-size: 18px;
             line-height: 1.6;
             margin-bottom: 30px;
-            color: #555;
+            color: var(--text-color);
         }
-        
+
+        .highlight {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
         .video-wrapper {
             margin: 30px 0;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             background: #000;
         }
-        
+
         .video-wrapper:hover {
             transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
         }
-        
+
         video {
             width: 100%;
             height: auto;
             max-height: 70vh;
             display: block;
         }
-        
+
         .follow-section {
             margin-top: 30px;
-            padding: 20px;
-            background-color: rgba(74, 107, 175, 0.05);
+            padding: 25px;
+            background-color: rgba(255, 126, 95, 0.05);
             border-radius: 12px;
+            border: 1px solid rgba(255, 126, 95, 0.1);
         }
-        
+
         .follow-title {
-            font-size: 20px;
+            font-size: 22px;
             color: var(--accent-color);
             margin-bottom: 15px;
+            font-weight: 600;
         }
-        
+
         .follow-text {
             font-size: 16px;
-            color: #555;
+            color: var(--text-color);
             margin-bottom: 20px;
+            opacity: 0.9;
         }
-        
+
         .follow-btn {
-            padding: 12px 24px;
-            background-color: var(--accent-color);
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
             border: none;
             border-radius: 30px;
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
+            box-shadow: 0 4px 15px rgba(255, 126, 95, 0.3);
         }
-        
+
         .follow-btn:hover {
-            background-color: #7b1fa2;
             transform: translateY(-3px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 20px rgba(255, 126, 95, 0.4);
         }
-        
-        .follow-btn::before {
-            content: "➕";
+
+        .follow-btn:active {
+            transform: translateY(1px);
         }
-        
+
+        .follow-btn i {
+            font-size: 18px;
+        }
+
         .social-links {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 20px;
             margin-top: 25px;
         }
-        
+
         .social-link {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             background-color: var(--primary-color);
             color: white;
@@ -153,68 +236,158 @@
             font-size: 20px;
             text-decoration: none;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
-        
+
         .social-link:hover {
             transform: translateY(-3px) scale(1.1);
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
         }
-        
-        .social-link.wechat { background-color: #07C160; }
-        .social-link.bilibili { background-color: #FB7299; }
-        .social-link.douyin { background-color: #000; }
-        
+
+        .social-link.wechat {
+            background-color: #07C160;
+        }
+
+        .social-link.bilibili {
+            background-color: #FB7299;
+        }
+
+        .social-link.douyin {
+            background-color: #000;
+        }
+
         .footer {
             margin-top: 30px;
             font-size: 14px;
-            color: var(--secondary-color);
+            color: var(--text-color);
+            opacity: 0.8;
         }
-        
+
         .heart {
-            color: #ff4444;
+            color: var(--accent-color);
             animation: heartbeat 1.5s infinite;
             display: inline-block;
         }
-        
+
         @keyframes heartbeat {
-            0% { transform: scale(1); }
-            25% { transform: scale(1.1); }
-            50% { transform: scale(1); }
-            75% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            25% {
+                transform: scale(1.1);
+            }
+
+            50% {
+                transform: scale(1);
+            }
+
+            75% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .video-container {
+                padding: 30px 20px;
+            }
+
+            .video-title {
+                font-size: 28px;
+            }
+
+            .video-message {
+                font-size: 16px;
+            }
+
+            .follow-btn {
+                padding: 12px 24px;
+            }
+
+            .social-links {
+                gap: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-links {
+                flex-direction: column;
+                gap: 10px;
+            }
         }
     </style>
 </head>
+
 <body>
+    <!-- 顶部导航栏 - WebServer控制面板 -->
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-server"></i>
+            <span>WebServer 控制面板</span>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link"><i class="fas fa-home"></i> 首页</a>
+            <a href="8" class="nav-link"><i class="fas fa-upload"></i> 文件上传</a>
+            <a href="9download.html" class="nav-link"><i class="fas fa-download"></i> 文件下载</a>
+            <a href="10" class="nav-link"><i class="fas fa-robot"></i> 图像分类</a>
+            <a href="11" class="nav-link"><i class="fas fa-robot"></i> 目标检测</a>
+        </div>
+    </div>
+
     <div class="video-container">
         <h1 class="video-title">你居然想看视频，不想关注我</h1>
-        
+
         <p class="video-message">
             喜欢这个视频吗？关注 <span class="highlight">"两猿社"</span> 获取更多精彩内容 <span class="heart">❤️</span>
         </p>
-        
+
         <div class="video-wrapper">
             <video controls poster="thumbnail.jpg">
                 <source src="xxx.mp4" type="video/mp4">
                 您的浏览器不支持 HTML5 视频标签。
             </video>
         </div>
-        
+
         <div class="follow-section">
             <h3 class="follow-title">喜欢这个视频？</h3>
             <p class="follow-text">关注我们获取更多精彩内容</p>
-            <button class="follow-btn">关注两猿社</button>
-            
+            <button class="follow-btn">
+                <i class="fas fa-heart"></i>
+                关注两猿社
+            </button>
+
             <div class="social-links">
-                <a href="#" class="social-link wechat" title="微信公众号">📱</a>
-                <a href="#" class="social-link bilibili" title="哔哩哔哩">▶️</a>
-                <a href="#" class="social-link douyin" title="抖音">🎵</a>
+                <a href="#" class="social-link wechat" title="微信公众号">
+                    <i class="fab fa-weixin"></i>
+                </a>
+                <a href="#" class="social-link bilibili" title="哔哩哔哩">
+                    <i class="fas fa-play"></i>
+                </a>
+                <a href="#" class="social-link douyin" title="抖音">
+                    <i class="fas fa-music"></i>
+                </a>
             </div>
         </div>
-        
+
         <div class="footer">
             更多精彩内容，请关注我们的社交媒体账号
         </div>
     </div>
 </body>
+
 </html>

@@ -5,23 +5,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智能图像分析系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4a6baf;
-            --secondary-color: #6c757d;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
+            --primary-color: #ff7e5f;
+            --secondary-color: #feb47b;
+            --accent-color: #ff6b6b;
+            --light-color: #fff9f5;
+            --dark-color: #553c3c;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            margin: 0;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
             min-height: 100vh;
             color: #333;
+            padding: 20px;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: var(--dark-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 15px;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 126, 95, 0.1);
+            color: var(--primary-color);
         }
 
         .container {
@@ -29,104 +82,192 @@
             margin: 0 auto;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 25px;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 968px) {
             .container {
                 grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
             }
         }
 
         .panel {
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
             margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
         }
 
         h1 {
             text-align: center;
             color: var(--dark-color);
             margin: 20px 0 30px;
-            font-size: 2.2em;
+            font-size: 2.5rem;
             grid-column: 1 / -1;
+            font-weight: 700;
         }
 
         h2 {
-            color: var(--dark-color);
+            color: var(--primary-color);
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 2px solid var(--light-color);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2 i {
+            color: var(--secondary-color);
         }
 
         .upload-container {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 20px;
         }
 
         .drop-area {
-            border: 2px dashed #bdc3c7;
-            border-radius: 8px;
-            padding: 40px 20px;
+            border: 3px dashed rgba(255, 126, 95, 0.4);
+            border-radius: 12px;
+            padding: 50px 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: #fafafa;
+            background: var(--light-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drop-area::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.1) 0%, rgba(254, 180, 123, 0.1) 100%);
+            z-index: -1;
+            border-radius: 16px;
         }
 
         .drop-area:hover,
         .drop-area.highlight {
             border-color: var(--primary-color);
-            background-color: rgba(52, 152, 219, 0.05);
+            background-color: rgba(255, 126, 95, 0.05);
+            transform: translateY(-3px);
         }
 
         .upload-icon {
-            width: 60px;
+            font-size: 60px;
             margin-bottom: 15px;
-            opacity: 0.7;
+            color: var(--primary-color);
         }
 
         .btn {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
+            padding: 14px 25px;
+            border-radius: 50px;
             cursor: pointer;
             font-size: 16px;
-            transition: background 0.3s;
+            font-weight: 600;
+            transition: all 0.3s ease;
             text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(255, 126, 95, 0.3);
         }
 
         .btn:hover {
-            background: #2980b9;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 126, 95, 0.4);
         }
 
         .btn-secondary {
-            background: var(--secondary-color);
-            color: white;
+            background: rgba(255, 126, 95, 0.1);
+            color: var(--primary-color);
+            box-shadow: none;
         }
 
         .btn-secondary:hover {
-            background: #5a6268;
+            background: rgba(255, 126, 95, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(255, 126, 95, 0.2);
         }
 
         .file-info {
             margin-top: 20px;
+            padding: 16px;
+            background: var(--light-color);
+            border-radius: 10px;
+            display: none;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .model-selector {
+            margin: 25px 0;
+        }
+
+        .model-selector label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .model-selector select {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 2px solid var(--light-color);
+            background: white;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .model-selector select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 126, 95, 0.2);
+        }
+
+        .model-info {
+            margin-top: 10px;
             padding: 12px;
             background: var(--light-color);
             border-radius: 8px;
-            display: none;
+            font-size: 14px;
+            color: var(--dark-color);
+            border-left: 3px solid var(--secondary-color);
         }
 
         .progress-container {
             width: 100%;
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
+            height: 10px;
+            background: rgba(255, 126, 95, 0.2);
+            border-radius: 5px;
             margin-top: 20px;
             overflow: hidden;
             display: none;
@@ -134,43 +275,51 @@
 
         .progress-bar {
             height: 100%;
-            background: var(--primary-color);
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             width: 0%;
-            transition: width 0.3s ease;
+            transition: width 0.4s ease;
+            border-radius: 5px;
         }
 
         .status-message {
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 10px;
+            padding: 16px;
+            border-radius: 10px;
+            margin-top: 15px;
             display: none;
+            animation: fadeIn 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .status-success {
-            background-color: rgba(40, 167, 69, 0.1);
+            background-color: rgba(76, 175, 80, 0.1);
             color: var(--success-color);
+            border-left: 4px solid var(--success-color);
         }
 
         .status-error {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: var(--danger-color);
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--error-color);
+            border-left: 4px solid var(--error-color);
         }
 
         .loading {
             text-align: center;
-            margin: 20px 0;
+            margin: 30px 0;
             display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
         }
 
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 126, 95, 0.2);
             border-radius: 50%;
-            border-left-color: var(--primary-color);
+            border-top-color: var(--primary-color);
             animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-bottom: 10px;
         }
 
         @keyframes spin {
@@ -185,40 +334,36 @@
 
         .preview-container {
             text-align: center;
-            margin: 20px 0;
+            margin: 25px 0;
         }
 
         #imagePreview {
             max-width: 100%;
-            max-height: 300px;
-            border-radius: 8px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            max-height: 350px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
             display: none;
         }
 
         .result-container {
-            margin-top: 20px;
+            margin-top: 25px;
         }
 
         .prediction-item {
             display: flex;
             flex-direction: column;
-            /* 改为垂直排列 */
-            gap: 8px;
-            /* 元素间添加间距 */
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            margin: 10px 0;
+            gap: 12px;
+            padding: 20px;
+            background: var(--light-color);
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid var(--primary-color);
         }
 
-        .progress-bar-container {
-            width: 100%;
-            /* 进度条宽度占满容器 */
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
+        .class-name {
+            font-weight: 600;
+            color: var(--dark-color);
+            font-size: 18px;
         }
 
         .confidence {
@@ -226,37 +371,118 @@
             color: var(--primary-color);
         }
 
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+        }
 
         .prediction-progress {
             height: 100%;
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-            border-radius: 4px;
+            border-radius: 5px;
+        }
+
+        .network-panel {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .network-info {
+            margin-top: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--light-color);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .info-value {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: var(--dark-color);
+            opacity: 0.8;
+            font-size: 14px;
+            grid-column: 1 / -1;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 
 <body>
+    <!-- 顶部导航栏 -->
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-brain"></i>
+            <span>智能图像分析系统</span>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link"><i class="fas fa-home"></i> 首页</a>
+            <a href="8" class="nav-link"><i class="fas fa-upload"></i> 文件上传</a>
+            <a href="9download.html" class="nav-link"><i class="fas fa-download"></i> 文件下载</a>
+            <a href="11" class="nav-link"><i class="fas fa-download"></i> 目标检测</a>
+        </div>
+    </div>
+
     <div class="container">
         <h1>智能图像分析系统</h1>
 
         <!-- 左侧面板：图像上传和分析 -->
         <div class="panel">
-            <h2>图像分析</h2>
+            <h2><i class="fas fa-image"></i> 图像分析</h2>
 
             <div class="upload-container">
                 <div class="drop-area" id="dropArea">
-                    <img src="https://cdn-icons-png.flaticon.com/512/109/109612.png" alt="上传图标" class="upload-icon">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
                     <p>拖拽图片到此处或点击选择文件</p>
+                    <p class="upload-hint">支持 JPG, PNG, GIF 格式</p>
                 </div>
 
                 <input type="file" id="fileInput" accept="image/*" style="display: none;">
-                <button class="btn" id="uploadBtn">选择图片</button>
-                <button class="btn btn-secondary" id="cancelBtn" style="display: none;">取消上传</button>
+                <button class="btn" id="uploadBtn">
+                    <i class="fas fa-folder-open"></i> 选择图片
+                </button>
+                <button class="btn btn-secondary" id="cancelBtn" style="display: none;">
+                    <i class="fas fa-times"></i> 取消上传
+                </button>
             </div>
 
             <div class="model-selector">
                 <label for="modelSelect">
-                    <h3>选择分析模型：</h3>
+                    <i class="fas fa-cogs"></i> 选择分析模型：
                 </label>
                 <select id="modelSelect">
                     <!-- 注意这里value是真正的模型名称，服务端根据该value从指定权重文件夹下面选择模型进行识别 -->
@@ -266,7 +492,7 @@
                     <option value="custom">自定义模型...</option>
                 </select>
                 <div class="model-info" id="modelDesc">
-                    MyModel: 适用于移动设备的轻量模型（10MB），识别常见物体
+                    <i class="fas fa-info-circle"></i> MyModel: 适用于移动设备的轻量模型（10MB），识别常见物体
                 </div>
             </div>
 
@@ -278,7 +504,7 @@
 
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>正在分析图片...</p>
+                <p>正在分析图片，请稍候...</p>
             </div>
 
             <div class="preview-container">
@@ -291,18 +517,39 @@
         </div>
 
         <!-- 右侧面板：网络请求分析 -->
-        <div class="panel">
-            <h2>网络请求分析</h2>
+        <div class="panel network-panel">
+            <h2><i class="fas fa-network-wired"></i> 分析信息</h2>
             <div id="networkAnalysis">
-                <!-- 内容将通过JavaScript动态填充 -->
+                <div class="network-info">
+                    <div class="info-item">
+                        <span class="info-label">当前模型:</span>
+                        <span class="info-value" id="currentModel">未选择</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">上传状态:</span>
+                        <span class="info-value" id="uploadStatus">等待中</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">分析进度:</span>
+                        <span class="info-value" id="analysisProgress">0%</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">响应时间:</span>
+                        <span class="info-value" id="responseTime">-</span>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2023 智能图像分析系统 | 基于深度学习技术</p>
     </div>
 
     <script>
         // 配置和状态
         const MODEL_DESCRIPTIONS = {
-            mymodel: "MyModel: 适用于移动设备的轻量模型（10MB），识别常见物体",
+            myModel: "MyModel: 适用于移动设备的轻量模型（10MB），识别常见物体",
             resnet50: "ResNet-50: 经典深度模型（100MB），识别精度高",
             efficientnet: "EfficientNet: 精度与速度的平衡（50MB）",
             custom: "自定义模型路径，需在服务器配置"
@@ -322,16 +569,25 @@
         const progressBar = document.getElementById('progressBar');
         const statusMessage = document.getElementById('statusMessage');
 
+        // 信息面板元素
+        const currentModelEl = document.getElementById('currentModel');
+        const uploadStatusEl = document.getElementById('uploadStatus');
+        const analysisProgressEl = document.getElementById('analysisProgress');
+        const responseTimeEl = document.getElementById('responseTime');
+
         // 上传控制变量
         let uploadController = null;
         let uploadInterval = null;
         let isUploading = false;
+        let startTime = 0;
 
         // 初始化事件监听
         function initEventListeners() {
             // 模型选择变化
             modelSelect.addEventListener('change', function () {
-                modelDesc.textContent = MODEL_DESCRIPTIONS[this.value] || '未知模型';
+                const modelValue = this.value;
+                modelDesc.textContent = MODEL_DESCRIPTIONS[modelValue] || '未知模型';
+                currentModelEl.textContent = modelValue;
             });
 
             // 文件选择相关事件（修复点击无响应问题）
@@ -381,7 +637,7 @@
 
             const file = files[0];
             if (!file.type.match('image.*')) {
-                alert('请选择图片文件！');
+                showStatus('请选择图片文件！', 'error');
                 return;
             }
 
@@ -391,7 +647,8 @@
                 imagePreview.src = e.target.result;
                 imagePreview.style.display = 'block';
                 resultDiv.style.display = 'none';
-                uploadBtn.textContent = '开始上传';
+                uploadBtn.innerHTML = '<i class="fas fa-upload"></i> 开始上传';
+                uploadStatusEl.textContent = '已选择文件';
             };
             reader.readAsDataURL(file);
         }
@@ -407,11 +664,19 @@
             }
         }
 
+        // 显示状态消息
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message';
+            statusMessage.classList.add(type === 'error' ? 'status-error' : 'status-success');
+            statusMessage.style.display = 'flex';
+        }
+
         // 上传文件（分块版本）- 完全保留您指定的headers配置
         function uploadFile() {
             const file = fileInput.files[0];
             if (!file) {
-                alert('请先选择文件！');
+                showStatus('请先选择文件！', 'error');
                 return;
             }
 
@@ -423,7 +688,9 @@
             cancelBtn.style.display = 'inline-block';
             progressContainer.style.display = 'block';
             statusMessage.style.display = 'none';
-            loadingDiv.style.display = 'block';
+            loadingDiv.style.display = 'flex';
+            uploadStatusEl.textContent = '上传中...';
+            startTime = Date.now();
 
             // 初始化AbortController
             uploadController = new AbortController();
@@ -440,6 +707,7 @@
                 const baseProgress = (uploadedChunks / totalChunks) * 90;
                 const progress = Math.min(baseProgress + (Math.random() * 5), 100);
                 progressBar.style.width = progress + '%';
+                analysisProgressEl.textContent = `${Math.round(progress)}%`;
             }, 200);
 
             // 专门处理最终响应
@@ -466,6 +734,11 @@
                 };
 
                 displayResult(result);
+
+                // 更新响应时间
+                const responseTime = Date.now() - startTime;
+                responseTimeEl.textContent = `${responseTime}ms`;
+                uploadStatusEl.textContent = '分析完成';
             }
 
             // 分块上传函数
@@ -502,16 +775,12 @@
                     if (uploadedChunks >= totalChunks) {
                         clearInterval(uploadInterval);
                         progressBar.style.width = '100%';
-                        statusMessage.textContent = '文件上传成功！';
-                        statusMessage.className = 'status-message status-success';
-                        // 获取最终分析结果
+                        analysisProgressEl.textContent = '100%';
 
                         // 等待服务端处理完成（响应头已包含结果）
                         await processFinalResponse(response);
 
-                        statusMessage.textContent = '文件上传分析完成！';
-                        statusMessage.className = 'status-message status-success';
-                        statusMessage.style.display = 'block';
+                        showStatus('文件上传分析完成！', 'success');
                     }
 
                     // 上传下一个块
@@ -523,9 +792,8 @@
                     if (err.name !== 'AbortError') {
                         console.error('上传错误:', err);
                         clearInterval(uploadInterval);
-                        statusMessage.textContent = err.message || '上传失败';
-                        statusMessage.className = 'status-message status-error';
-                        statusMessage.style.display = 'block';
+                        showStatus(err.message || '上传失败', 'error');
+                        uploadStatusEl.textContent = '上传失败';
                     }
                     throw err;
                 }
@@ -547,16 +815,15 @@
         function cancelUpload() {
             if (uploadController) {
                 uploadController.abort();
-                statusMessage.textContent = '上传已取消';
-                statusMessage.className = 'status-message status-error';
-                statusMessage.style.display = 'block';
+                showStatus('上传已取消', 'error');
+                uploadStatusEl.textContent = '已取消';
             }
         }
 
         // 显示分析结果
         function displayResult(data) {
             let resultHTML = `
-                <h3>识别结果（使用模型: ${data.model}）</h3>`;
+                <h3><i class="fas fa-check-circle"></i> 识别结果（使用模型: ${data.model}）</h3>`;
 
             if (data.predictions && data.predictions.length > 0) {
                 data.predictions.forEach(pred => {
@@ -564,12 +831,9 @@
                     const inference_time = (pred.inference_time).toFixed(3);
                     resultHTML += `
                         <div class="prediction-item">
-                            <span class="class-name">预测的类别 : ${pred.class}</span>
-                            <br>
-                            <span class="confidence">confidence = ${percentage}%</span>
-                            <br>
-                            <span class="confidence">inference time = ${inference_time}ms</span>
-                            <br>
+                            <span class="class-name">预测的类别: ${pred.class}</span>
+                            <span class="confidence">置信度: ${percentage}%</span>
+                            <span class="confidence">推理时间: ${inference_time}ms</span>
                             <div class="progress-bar-container">
                                 <div class="prediction-progress" style="width: ${percentage}%"></div>
                             </div>
@@ -587,6 +851,9 @@
         // 初始化应用
         function initApp() {
             initEventListeners();
+            // 设置默认模型描述
+            modelDesc.textContent = MODEL_DESCRIPTIONS[modelSelect.value];
+            currentModelEl.textContent = modelSelect.value;
             console.log('系统初始化完成');
         }
 

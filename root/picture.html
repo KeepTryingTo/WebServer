@@ -1,152 +1,428 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>精彩内容 - WebServer</title>
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-                margin: 0;
-                padding: 0;
-                min-height: 100vh;
-                display: flex;
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>精彩内容 - WebServer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #ff7e5f;
+            --secondary-color: #feb47b;
+            --accent-color: #ff6b6b;
+            --light-color: #fff9f5;
+            --dark-color: #553c3c;
+            --text-color: #5a4b4b;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+            padding: 20px;
+        }
+
+        /* 控制面板样式 */
+        .header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px 25px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: var(--dark-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 15px;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 126, 95, 0.1);
+            color: var(--primary-color);
+        }
+
+        /* 内容容器样式 */
+        .container {
+            background-color: rgba(255, 255, 255, 0.92);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+            padding: 40px;
+            width: 90%;
+            max-width: 800px;
+            animation: fadeIn 0.8s ease;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.1) 0%, rgba(254, 180, 123, 0.1) 100%);
+            z-index: -1;
+            border-radius: 20px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: var(--dark-color);
+            margin-bottom: 30px;
+            font-weight: 700;
+            font-size: 36px;
+            position: relative;
+            display: inline-block;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        h1::after {
+            content: "";
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 4px;
+        }
+
+        .image-container {
+            margin: 35px 0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .image-container:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
+        }
+
+        .image-container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.2) 0%, rgba(254, 180, 123, 0.2) 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 1;
+        }
+
+        .image-container:hover::before {
+            opacity: 1;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 16px;
+            transition: transform 0.5s ease;
+        }
+
+        .image-container:hover img {
+            transform: scale(1.05);
+        }
+
+        .caption {
+            margin-top: 25px;
+            font-style: italic;
+            color: var(--dark-color);
+            font-size: 18px;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .image-container:hover+.caption {
+            color: var(--primary-color);
+        }
+
+        .social-links {
+            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .social-links a {
+            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255, 126, 95, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .social-links a::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .social-links a:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 126, 95, 0.4);
+        }
+
+        .social-links a:hover::before {
+            transform: translateY(0);
+        }
+
+        .social-links a i {
+            font-size: 22px;
+            transition: transform 0.3s ease;
+        }
+
+        .social-links a:hover i {
+            transform: scale(1.2);
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 16px;
+            color: var(--dark-color);
+            padding: 15px 25px;
+            background-color: var(--light-color);
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        .footer:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .footer a::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: var(--accent-color);
+        }
+
+        .footer a:hover::after {
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .header {
                 flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                color: #333;
+                gap: 15px;
                 text-align: center;
             }
-            
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
             .container {
-                background-color: white;
-                border-radius: 16px;
-                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-                padding: 40px;
-                width: 90%;
-                max-width: 800px;
-                animation: fadeIn 0.6s ease;
+                padding: 30px 20px;
             }
-            
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(20px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            
+
             h1 {
-                color: #4a6baf;
-                margin-bottom: 30px;
-                font-weight: 600;
-                font-size: 32px;
-                position: relative;
-                display: inline-block;
+                font-size: 28px;
             }
-            
-            h1::after {
-                content: "";
-                position: absolute;
-                bottom: -10px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 60px;
-                height: 3px;
-                background: linear-gradient(90deg, #4a6baf, #9c27b0);
-                border-radius: 3px;
+
+            .social-links {
+                gap: 15px;
             }
-            
-            .image-container {
-                margin: 30px 0;
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-                transition: transform 0.3s ease;
+
+            .social-links a {
+                width: 50px;
+                height: 50px;
             }
-            
-            .image-container:hover {
-                transform: translateY(-5px);
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 24px;
             }
-            
-            .image-container img {
-                max-width: 100%;
-                height: auto;
-                display: block;
-                border-radius: 12px;
-                transition: transform 0.3s ease;
-            }
-            
-            .image-container:hover img {
-                transform: scale(1.02);
-            }
-            
+
             .caption {
-                margin-top: 20px;
-                font-style: italic;
-                color: #666;
                 font-size: 16px;
             }
-            
+
             .footer {
-                margin-top: 40px;
                 font-size: 14px;
-                color: #777;
             }
-            
-            .footer a {
-                color: #4a6baf;
-                text-decoration: none;
-                font-weight: 500;
-            }
-            
-            .footer a:hover {
-                text-decoration: underline;
-            }
-            
-            .social-links {
-                margin-top: 30px;
-                display: flex;
-                justify-content: center;
-                gap: 20px;
-            }
-            
+
             .social-links a {
-                color: white;
-                background-color: #4a6baf;
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-decoration: none;
-                transition: all 0.3s ease;
+                width: 45px;
+                height: 45px;
             }
-            
-            .social-links a:hover {
-                background-color: #3a5a9f;
-                transform: translateY(-3px);
+
+            .social-links a i {
+                font-size: 18px;
             }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>你居然想看图，不想关注我</h1>
-            
-            <div class="image-container">
-                <img src="./xxx.jpg" alt="精彩内容" title="awsl">
-            </div>
-            
-            <div class="caption">点击图片可以查看大图哦~</div>
-            
-            <div class="social-links">
-                <a href="#" title="微博">📱</a>
-                <a href="#" title="微信">💬</a>
-                <a href="#" title="B站">▶️</a>
-                <a href="#" title="抖音">🎵</a>
-            </div>
-            
-            <div class="footer">
-                喜欢这张图片吗？<a href="#">关注我获取更多精彩内容</a>
-            </div>
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-server"></i>
+            <span>WebServer 控制面板</span>
         </div>
-    </body>
+        <div class="nav-links">
+            <a href="/" class="nav-link"><i class="fas fa-home"></i> 首页</a>
+            <a href="8" class="nav-link"><i class="fas fa-upload"></i> 文件上传</a>
+            <a href="9download.html" class="nav-link"><i class="fas fa-download"></i> 文件下载</a>
+            <a href="10" class="nav-link"><i class="fas fa-robot"></i> 图像分类</a>
+            <a href="11" class="nav-link"><i class="fas fa-robot"></i> 目标检测</a>
+        </div>
+    </div>
+
+    <!-- 内容容器 -->
+    <div class="container">
+        <h1>你居然想看图，不想关注我</h1>
+
+        <div class="image-container">
+            <img src="./xxx.jpg" alt="精彩内容" title="awsl">
+        </div>
+
+        <div class="caption">点击图片可以查看大图哦~</div>
+
+        <div class="social-links">
+            <a href="#" title="微博"><i class="fab fa-weibo"></i></a>
+            <a href="#" title="微信"><i class="fab fa-weixin"></i></a>
+            <a href="#" title="B站"><i class="fab fa-bilibili"></i></a>
+            <a href="#" title="抖音"><i class="fab fa-tiktok"></i></a>
+        </div>
+
+        <div class="footer">
+            喜欢这张图片吗？<a href="#">
+                <i class="fas fa-heart"></i>
+                <span>关注我获取更多精彩内容</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // 添加图片点击放大功能
+        document.querySelector('.image-container').addEventListener('click', function () {
+            this.classList.toggle('zoomed');
+
+            if (this.classList.contains('zoomed')) {
+                this.style.transform = 'scale(1.02)';
+                this.style.cursor = 'zoom-out';
+            } else {
+                this.style.transform = 'translateY(-8px)';
+                this.style.cursor = 'zoom-in';
+            }
+        });
+
+        // 添加社交媒体按钮悬停效果
+        document.querySelectorAll('.social-links a').forEach(link => {
+            link.addEventListener('mouseenter', function () {
+                this.style.transform = 'translateY(-5px) scale(1.1)';
+            });
+
+            link.addEventListener('mouseleave', function () {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+
 </html>

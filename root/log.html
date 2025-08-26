@@ -1,147 +1,424 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>用户登录 - WebServer</title>
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-                margin: 0;
-                padding: 0;
-                min-height: 100vh;
-                display: flex;
+
+<head>
+    <meta charset="UTF-8">
+    <title>用户登录 - WebServer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #ff7e5f;
+            --secondary-color: #feb47b;
+            --accent-color: #ff6b6b;
+            --light-color: #fff9f5;
+            --dark-color: #553c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        /* 控制面板头部样式 */
+        .header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px 25px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: var(--dark-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 15px;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 126, 95, 0.1);
+            color: var(--primary-color);
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.92);
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.1) 0%, rgba(254, 180, 123, 0.1) 100%);
+            z-index: -1;
+            border-radius: 20px;
+        }
+
+        h1 {
+            color: var(--dark-color);
+            margin-bottom: 30px;
+            font-weight: 700;
+            font-size: 32px;
+            position: relative;
+            display: inline-block;
+        }
+
+        h1::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 3px;
+        }
+
+        .login {
+            width: 100%;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-container {
+            position: relative;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid #f0d6cb;
+            border-radius: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            background-color: var(--light-color);
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(255, 126, 95, 0.2);
+            outline: none;
+        }
+
+        input::placeholder {
+            color: #b8a69b;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-top: 5px;
+            margin-bottom: 20px;
+        }
+
+        .forgot-password a {
+            color: var(--dark-color);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .forgot-password a:hover {
+            color: var(--primary-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            margin-top: 15px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(255, 126, 95, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 126, 95, 0.4);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: var(--dark-color);
+        }
+
+        .footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .footer a:hover {
+            color: var(--accent-color);
+            text-decoration: underline;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+            color: var(--dark-color);
+            opacity: 0.7;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+        }
+
+        .divider span {
+            padding: 0 15px;
+            font-size: 14px;
+        }
+
+        .social-login {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .social-btn {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #f0d6cb;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .social-btn:hover {
+            background-color: var(--light-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .social-icon {
+            font-size: 18px;
+        }
+
+        .google {
+            color: #DB4437;
+        }
+
+        .facebook {
+            color: #4267B2;
+        }
+
+        .github {
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .header {
                 flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                color: #333;
-            }
-            
-            .container {
-                background-color: white;
-                border-radius: 12px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-                padding: 40px;
-                width: 90%;
-                max-width: 400px;
+                gap: 15px;
                 text-align: center;
             }
-            
-            h1 {
-                color: #4a6baf;
-                margin-bottom: 30px;
-                font-weight: 600;
-                font-size: 28px;
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
             }
-            
-            .login {
-                width: 100%;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
             }
-            
-            input {
-                width: 100%;
-                padding: 12px 15px;
-                margin: 8px 0;
-                border: 1px solid #ddd;
-                border-radius: 6px;
-                font-size: 16px;
-                box-sizing: border-box;
-                transition: all 0.3s ease;
+
+            .social-login {
+                flex-direction: column;
+                gap: 10px;
             }
-            
-            input:focus {
-                border-color: #4a6baf;
-                box-shadow: 0 0 0 3px rgba(74, 107, 175, 0.2);
-                outline: none;
+
+            .nav-links {
+                flex-direction: column;
+                gap: 10px;
             }
-            
-            input::placeholder {
-                color: #aaa;
-            }
-            
-            button {
-                width: 100%;
-                padding: 12px;
-                margin-top: 15px;
-                background-color: #2196F3;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-size: 16px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.3s ease;
-            }
-            
-            button:hover {
-                background-color: #0b7dda;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-            
-            .footer {
-                margin-top: 30px;
-                font-size: 12px;
-                color: #777;
-            }
-            
-            .form-group {
-                margin-bottom: 20px;
-                text-align: left;
-            }
-            
-            .form-group label {
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 500;
-                color: #555;
-            }
-            
-            .forgot-password {
-                text-align: right;
-                margin-top: -10px;
-                margin-bottom: 20px;
-            }
-            
-            .forgot-password a {
-                color: #777;
-                text-decoration: none;
-                font-size: 14px;
-            }
-            
-            .forgot-password a:hover {
-                color: #4a6baf;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>欢迎回来</h1>
-            
-            <div class="login">
-                <form action="2CGISQL.cgi" method="post">
-                    <div class="form-group">
-                        <label for="user">用户名</label>
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 顶部导航栏 - WebServer控制面板 -->
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-server"></i>
+            <span>WebServer 控制面板</span>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link"><i class="fas fa-home"></i> 首页</a>
+            <a href="8" class="nav-link"><i class="fas fa-upload"></i> 文件上传</a>
+            <a href="9download.html" class="nav-link"><i class="fas fa-download"></i> 文件下载</a>
+            <a href="10" class="nav-link"><i class="fas fa-robot"></i> 图像分类</a>
+            <a href="11" class="nav-link"><i class="fas fa-robot"></i> 目标检测</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>欢迎回来</h1>
+
+        <div class="login">
+            <form action="2CGISQL.cgi" method="post">
+                <div class="form-group">
+                    <label for="user">
+                        <i class="fas fa-user"></i>
+                        <span>用户名</span>
+                    </label>
+                    <div class="input-container">
+                        <i class="fas fa-user input-icon"></i>
                         <input type="text" id="user" name="user" placeholder="请输入用户名" required="required">
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="password">密码</label>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock"></i>
+                        <span>密码</span>
+                    </label>
+                    <div class="input-container">
+                        <i class="fas fa-lock input-icon"></i>
                         <input type="password" id="password" name="password" placeholder="请输入密码" required="required">
-                        <div class="forgot-password">
-                            <a href="#">忘记密码？</a>
-                        </div>
                     </div>
-                    
-                    <button type="submit">
-                        <span>登录</span>
-                    </button>
-                </form>
+                    <div class="forgot-password">
+                        <a href="#">
+                            <i class="fas fa-question-circle"></i>
+                            <span>忘记密码？</span>
+                        </a>
+                    </div>
+                </div>
+
+                <button type="submit">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>登录</span>
+                </button>
+            </form>
+
+            <div class="divider">
+                <span>或使用其他方式登录</span>
             </div>
-            
-            <div class="footer">
-                还没有账户？<a href="#" style="color: #4a6baf; text-decoration: none;">立即注册</a>
+
+            <div class="social-login">
+                <button type="button" class="social-btn">
+                    <i class="fab fa-google social-icon google"></i>
+                </button>
+                <button type="button" class="social-btn">
+                    <i class="fab fa-facebook-f social-icon facebook"></i>
+                </button>
+                <button type="button" class="social-btn">
+                    <i class="fab fa-github social-icon github"></i>
+                </button>
             </div>
         </div>
-    </body>
+
+        <div class="footer">
+            还没有账户？<a href="#">
+                <i class="fas fa-user-plus"></i>
+                <span>立即注册</span>
+            </a>
+        </div>
+    </div>
+</body>
+
 </html>

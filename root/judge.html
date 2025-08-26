@@ -1,130 +1,328 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>WebServer 控制面板</title>
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-                margin: 0;
-                padding: 0;
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                color: #333;
-            }
-            
-            .container {
-                background-color: white;
-                border-radius: 12px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-                padding: 40px;
-                width: 90%;
-                max-width: 500px;
-                text-align: center;
-            }
-            
-            h1 {
-                color: #4a6baf;
-                margin-bottom: 30px;
-                font-weight: 600;
-            }
-            
-            .button-container {
-                display: flex;
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebServer 控制面板</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        /* 顶部导航栏 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff6b6b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .auth-btn {
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .login-btn {
+            background-color: #4a6baf;
+            color: white;
+        }
+
+        .login-btn:hover {
+            background-color: #3a5a9f;
+            transform: translateY(-2px);
+        }
+
+        .register-btn {
+            background-color: #ff9f43;
+            color: white;
+        }
+
+        .register-btn:hover {
+            background-color: #f39c12;
+            transform: translateY(-2px);
+        }
+
+        /* 主内容区域 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 40px;
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .welcome-section h1 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            font-size: 2.5rem;
+        }
+
+        .welcome-section p {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* 功能模块区域 */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .module-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 250px;
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .module-icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+        }
+
+        .upload-icon {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .download-icon {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+        }
+
+        .ai-icon {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff9f43 100%);
+        }
+
+        .module-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #444;
+        }
+
+        .module-card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .module-btn {
+            padding: 12px 30px;
+            background-color: #ff7f50;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .module-btn:hover {
+            background-color: #ff6b6b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header {
                 flex-direction: column;
                 gap: 15px;
-                margin-top: 20px;
+                padding: 15px;
             }
-            
-            button {
-                padding: 12px 24px;
-                font-size: 16px;
-                border: none;
-                border-radius: 6px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                font-weight: 500;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-            }
-            
-            form {
-                width: 100%;
-            }
-            
-            button[type="submit"] {
-                width: 100%;
-                background-color: #4a6baf;
-                color: white;
-            }
-            
-            button[type="submit"]:hover {
-                background-color: #3a5a9f;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-            
-            /* 为不同按钮添加不同颜色 */
-            form:nth-child(1) button { background-color: #4CAF50; }
-            form:nth-child(1) button:hover { background-color: #3e8e41; }
-            
-            form:nth-child(2) button { background-color: #2196F3; }
-            form:nth-child(2) button:hover { background-color: #0b7dda; }
-            
-            form:nth-child(3) button { background-color: #ff9800; }
-            form:nth-child(3) button:hover { background-color: #e68a00; }
-            
-            form:nth-child(4) button { background-color: #9c27b0; }
-            form:nth-child(4) button:hover { background-color: #7b1fa2; }
-            
-            /* 添加图标（使用Unicode字符作为简单图标） */
-            button::before {
-                font-size: 18px;
-            }
-            
-            form:nth-child(1) button::before { content: "👤"; }
-            form:nth-child(2) button::before { content: "🔑"; }
-            form:nth-child(3) button::before { content: "⬆️"; }
-            form:nth-child(4) button::before { content: "⬇️"; }
-            
-            .footer {
-                margin-top: 30px;
-                font-size: 12px;
-                color: #777;
-            }
-        </style>
-    </head>  
-    <body>
-        <div class="container"> 
-            <h1>欢迎访问 WebServer</h1> 
-            
-            <div class="button-container">
-                <form action="0" method="post">
-                    <button type="submit">新用户注册</button>
-                </form>
-                
-                <form action="1" method="post">
-                    <button type="submit">已有账号登录</button>
-                </form>
 
-                <form action="8" method="get"  enctype="multipart/form-data">
-                    <button type="submit">文件上传</button>
-                </form>
-                
-                <form action="9download.html" method="get">
-                    <button type="submit">文件下载</button>
+            .auth-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .modules-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .welcome-section h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-server"></i>
+            <span>WebServer 控制面板</span>
+        </div>
+        <div class="auth-buttons">
+            <form action="1" method="post">
+                <button type="submit" class="auth-btn login-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>已有账号登录</span>
+                </button>
+            </form>
+            <form action="0" method="post">
+                <button type="submit" class="auth-btn register-btn">
+                    <i class="fas fa-user-plus"></i>
+                    <span>新用户注册</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="container">
+        <div class="welcome-section">
+            <h1>欢迎访问 WebServer</h1>
+            <p>一个功能强大的服务器控制平台，提供文件管理、AI处理等多种服务。选择下方模块开始使用吧！</p>
+        </div>
+
+        <!-- 功能模块区域 -->
+        <div class="modules-grid">
+            <div class="module-card">
+                <div class="module-icon upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h3>文件上传</h3>
+                <p>安全可靠的文件上传服务，支持多种格式，最大支持2GB文件。</p>
+                <form action="8" method="get" enctype="multipart/form-data">
+                    <button type="submit" class="module-btn">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>上传文件</span>
+                    </button>
                 </form>
             </div>
-            
-            <div class="footer">
-                © 2023 WebServer 控制面板 | 版本 1.0
+
+            <div class="module-card">
+                <div class="module-icon download-icon">
+                    <i class="fas fa-cloud-download-alt"></i>
+                </div>
+                <h3>文件下载</h3>
+                <p>快速高效的文件下载服务，支持断点续传和批量下载。</p>
+                <form action="9download.html" method="get">
+                    <button type="submit" class="module-btn">
+                        <i class="fas fa-arrow-down"></i>
+                        <span>下载文件</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="module-card">
+                <div class="module-icon ai-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>图像分类系统</h3>
+                <p>基于AI的图像识别与分类服务，支持多种图像格式和识别模型。</p>
+                <form action="10" method="get">
+                    <button type="submit" class="module-btn">
+                        <i class="fas fa-cogs"></i>
+                        <span>开始使用</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="module-card">
+                <div class="module-icon ai-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>目标检测系统</h3>
+                <p>基于AI的图像检测服务，支持多种图像格式和识别模型。</p>
+                <form action="11" method="get">
+                    <button type="submit" class="module-btn">
+                        <i class="fas fa-cogs"></i>
+                        <span>开始使用</span>
+                    </button>
+                </form>
             </div>
         </div>
-    </body>
+    </div>
+
+    <!-- 页脚 -->
+    <div class="footer">
+        © 2023 WebServer 控制面板 | 版本 2.0 | 全新设计
+    </div>
+</body>
+
 </html>

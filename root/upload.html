@@ -1,225 +1,464 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文件上传 - WebServer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* 样式部分保持不变，与之前相同 */
         :root {
-            --primary-color: #4a6baf;
-            --secondary-color: #6c757d;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
+            --primary-color: #ff7e5f;
+            --secondary-color: #feb47b;
+            --accent-color: #ff6b6b;
+            --light-color: #fff9f5;
+            --dark-color: #553c3c;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
         }
-        
-        body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: #333;
+            padding: 20px;
         }
-        
+
+        .header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px 25px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: var(--dark-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 15px;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 126, 95, 0.1);
+            color: var(--primary-color);
+        }
+
         .upload-container {
             background-color: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
             padding: 40px;
-            width: 90%;
-            max-width: 600px;
+            width: 100%;
+            max-width: 700px;
             text-align: center;
-            animation: fadeIn 0.5s ease;
+            animation: fadeIn 0.6s ease;
         }
-        
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        
+
         h2 {
             color: var(--primary-color);
-            font-size: 28px;
-            margin-bottom: 30px;
-            font-weight: 600;
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
             position: relative;
             display: inline-block;
         }
-        
+
         h2::after {
             content: "";
             position: absolute;
             bottom: -10px;
             left: 50%;
             transform: translateX(-50%);
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary-color), #9c27b0);
-            border-radius: 3px;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 4px;
         }
-        
+
+        .subtitle {
+            color: var(--dark-color);
+            font-size: 16px;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
         .upload-area {
-            border: 2px dashed var(--secondary-color);
-            border-radius: 12px;
-            padding: 40px 20px;
+            border: 3px dashed rgba(255, 126, 95, 0.4);
+            border-radius: 16px;
+            padding: 50px 30px;
             margin-bottom: 25px;
             transition: all 0.3s ease;
             cursor: pointer;
             background-color: var(--light-color);
+            position: relative;
+            overflow: hidden;
         }
-        
+
+        .upload-area::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.1) 0%, rgba(254, 180, 123, 0.1) 100%);
+            z-index: -1;
+            border-radius: 20px;
+        }
+
         .upload-area:hover {
             border-color: var(--primary-color);
-            background-color: rgba(74, 107, 175, 0.05);
+            background-color: rgba(255, 126, 95, 0.05);
+            transform: translateY(-5px);
         }
-        
+
         .upload-area.highlight {
             border-color: var(--success-color);
-            background-color: rgba(40, 167, 69, 0.05);
+            background-color: rgba(76, 175, 80, 0.05);
         }
-        
+
         .upload-icon {
-            font-size: 48px;
+            font-size: 60px;
             color: var(--primary-color);
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
-        
+
         .upload-text {
-            font-size: 16px;
-            color: var(--secondary-color);
-            margin-bottom: 10px;
+            font-size: 18px;
+            color: var(--dark-color);
+            margin-bottom: 15px;
+            font-weight: 500;
         }
-        
+
+        .upload-hint {
+            font-size: 14px;
+            color: var(--dark-color);
+            opacity: 0.7;
+            margin-bottom: 20px;
+        }
+
         .file-input {
             display: none;
         }
-        
+
         .btn {
-            padding: 12px 24px;
-            border-radius: 8px;
+            padding: 14px 28px;
+            border-radius: 50px;
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             border: none;
-            margin: 0 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        
+
         .btn-primary {
-            background-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
+            box-shadow: 0 4px 15px rgba(255, 126, 95, 0.3);
         }
-        
+
         .btn-primary:hover {
-            background-color: #3a5a9f;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 126, 95, 0.4);
         }
-        
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
         .btn-secondary {
-            background-color: var(--secondary-color);
-            color: white;
+            background-color: rgba(255, 126, 95, 0.1);
+            color: var(--primary-color);
         }
-        
+
         .btn-secondary:hover {
-            background-color: #5a6268;
+            background-color: rgba(255, 126, 95, 0.2);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        
+
         .file-info {
-            margin-top: 20px;
-            padding: 12px;
+            margin-top: 25px;
+            padding: 18px;
             background-color: var(--light-color);
-            border-radius: 8px;
+            border-radius: 12px;
             display: none;
+            text-align: left;
+            border-left: 4px solid var(--primary-color);
         }
-        
+
         .file-info.show {
             display: block;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.4s ease;
         }
-        
+
+        .file-info-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: var(--dark-color);
+            font-weight: 500;
+        }
+
+        .file-details {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .file-size {
+            color: var(--dark-color);
+            opacity: 0.7;
+            font-size: 14px;
+        }
+
         .progress-container {
             width: 100%;
-            height: 8px;
-            background-color: #e9ecef;
-            border-radius: 4px;
-            margin-top: 20px;
+            height: 10px;
+            background-color: rgba(255, 126, 95, 0.2);
+            border-radius: 5px;
+            margin-top: 25px;
             overflow: hidden;
             display: none;
         }
-        
+
         .progress-bar {
             height: 100%;
-            background-color: var(--primary-color);
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             width: 0%;
-            transition: width 0.3s ease;
+            transition: width 0.4s ease;
+            border-radius: 5px;
         }
-        
+
         .status-message {
-            margin-top: 20px;
-            padding: 12px;
-            border-radius: 8px;
+            margin-top: 25px;
+            padding: 16px;
+            border-radius: 12px;
             display: none;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.4s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        
+
         .status-success {
-            background-color: rgba(40, 167, 69, 0.1);
+            background-color: rgba(76, 175, 80, 0.1);
             color: var(--success-color);
-            display: block;
+            border-left: 4px solid var(--success-color);
         }
-        
+
         .status-error {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: var(--danger-color);
-            display: block;
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--error-color);
+            border-left: 4px solid var(--error-color);
         }
-        
-        .footer {
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
             margin-top: 30px;
-            font-size: 12px;
-            color: var(--secondary-color);
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 14px;
+            color: var(--dark-color);
+            opacity: 0.8;
+            text-align: center;
+            max-width: 700px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+        }
+
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: rgba(255, 255, 255, 0.6);
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-size: 14px;
+        }
+
+        .feature i {
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .upload-container {
+                padding: 25px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
+
 <body>
+    <!-- 顶部导航栏 -->
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-server"></i>
+            <span>WebServer 控制面板</span>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link"><i class="fas fa-home"></i> 首页</a>
+            <a href="9download.html" class="nav-link"><i class="fas fa-download"></i> 文件下载</a>
+            <a href="10" class="nav-link"><i class="fas fa-robot"></i> 图像分类</a>
+            <a href="11" class="nav-link"><i class="fas fa-robot"></i> 目标检测</a>
+        </div>
+    </div>
+
+    <!-- 上传容器 -->
     <div class="upload-container">
         <h2>文件上传</h2>
-        
+        <p class="subtitle">安全可靠的文件上传服务，支持多种格式</p>
+
         <div class="upload-area" id="uploadArea">
-            <div class="upload-icon">📁</div>
-            <div class="upload-text">点击或拖拽文件到此处</div>
+            <div class="upload-icon">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <div class="upload-text">点击或拖拽文件到此处上传</div>
+            <p class="upload-hint">支持单个文件上传，最大100MB</p>
             <input type="file" id="fileInput" class="file-input">
-            <button class="btn btn-secondary" id="selectFileBtn">选择文件</button>
+            <button class="btn btn-primary" id="selectFileBtn">
+                <i class="fas fa-folder-open"></i> 选择文件
+            </button>
         </div>
-        
+
         <div class="file-info" id="fileInfo">
-            <span id="fileName">未选择文件</span>
-            <span id="fileSize"></span>
+            <div class="file-info-header">
+                <i class="fas fa-file"></i>
+                <span>已选择文件：</span>
+            </div>
+            <div class="file-details">
+                <span class="file-name" id="fileName">未选择文件</span>
+                <span class="file-size" id="fileSize"></span>
+            </div>
         </div>
-        
+
         <div class="progress-container" id="progressContainer">
             <div class="progress-bar" id="progressBar"></div>
         </div>
-        
+
         <div class="status-message" id="statusMessage"></div>
-        
-        <div>
-            <button class="btn btn-primary" id="uploadBtn" disabled>开始上传</button>
-            <button class="btn btn-secondary" id="cancelBtn" disabled>取消</button>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="uploadBtn" disabled>
+                <i class="fas fa-upload"></i> 开始上传
+            </button>
+            <button class="btn btn-secondary" id="cancelBtn" disabled>
+                <i class="fas fa-times"></i> 取消上传
+            </button>
         </div>
-        
-        <div class="footer">
-            支持多种文件格式上传，最大支持100MB
+    </div>
+
+    <div class="footer">
+        <p>© 2023 WebServer 文件上传服务 | 版本 2.0</p>
+        <div class="features">
+            <div class="feature">
+                <i class="fas fa-lock"></i>
+                <span>安全加密</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-bolt"></i>
+                <span>高速传输</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-shield-alt"></i>
+                <span>病毒扫描</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-infinity"></i>
+                <span>断点续传</span>
+            </div>
         </div>
     </div>
 
@@ -236,80 +475,80 @@
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
         const statusMessage = document.getElementById('statusMessage');
-        
+
         // 全局变量保持原有UI控制逻辑
         let uploadController = null;
         let uploadInterval = null;
-        
+
         // 初始化事件监听
         function initEventListeners() {
             // 点击上传区域触发文件选择
             uploadArea.addEventListener('click', handleUploadAreaClick);
-            
+
             // 点击选择文件按钮
             selectFileBtn.addEventListener('click', handleSelectFileClick);
-            
+
             // 拖拽相关事件
             uploadArea.addEventListener('dragover', handleDragOver);
             uploadArea.addEventListener('dragleave', handleDragLeave);
             uploadArea.addEventListener('drop', handleDrop);
-            
+
             // 文件选择变化
             fileInput.addEventListener('change', updateFileInfo);
-            
+
             // 上传按钮点击事件
             uploadBtn.addEventListener('click', handleUploadClick);
-            
+
             // 取消按钮点击事件
             cancelBtn.addEventListener('click', cancelUpload);
         }
-        
+
         // 处理上传区域点击
         function handleUploadAreaClick(e) {
             // 阻止事件冒泡到父元素
             e.stopPropagation();
             fileInput.click();
         }
-        
+
         // 处理选择文件按钮点击
         function handleSelectFileClick(e) {
             e.stopPropagation();
             fileInput.click();
         }
-        
+
         // 处理拖拽进入
         function handleDragOver(e) {
             e.preventDefault();
             e.stopPropagation();
             uploadArea.classList.add('highlight');
         }
-        
+
         // 处理拖拽离开
         function handleDragLeave(e) {
             e.preventDefault();
             e.stopPropagation();
             uploadArea.classList.remove('highlight');
         }
-        
+
         // 处理文件拖放
         function handleDrop(e) {
             e.preventDefault();
             e.stopPropagation();
             uploadArea.classList.remove('highlight');
-            
+
             if (e.dataTransfer.files.length) {
                 fileInput.files = e.dataTransfer.files;
                 updateFileInfo();
             }
         }
-        
+
         // 处理上传点击
         function handleUploadClick(e) {
             e.preventDefault();
             e.stopPropagation();
             uploadFile();
         }
-        
+
         // 更新文件信息
         function updateFileInfo() {
             if (fileInput.files.length > 0) {
@@ -323,36 +562,36 @@
                 uploadBtn.disabled = true;
             }
         }
-        
+
         // 格式化文件大小
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
             const sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return ' (' + parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i] + ')';
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
         // 上传文件（分块版本）
         function uploadFile() {
             const file = fileInput.files[0];
             if (!file) return;
-            
+
             // 保持原有UI状态控制
             uploadBtn.disabled = true;
             cancelBtn.disabled = false;
             progressContainer.style.display = 'block';
             statusMessage.style.display = 'none';
-            
+
             // 初始化上传控制器（保持原有取消功能）
             uploadController = new AbortController();
-            
+
             // 分块大小设置（1KB）
             const chunkSize = 1024;
             // 根据每一次上传大小从划分出要上传的次数
             const totalChunks = Math.ceil(file.size / chunkSize);
             let uploadedChunks = 0;
-            
+
             // 保持原有的进度条动画逻辑
             let progress = 0;
             clearInterval(uploadInterval);
@@ -363,7 +602,7 @@
                 progress = Math.min(baseProgress + (Math.random() * 5), 100);
                 progressBar.style.width = progress + '%';
             }, 200);
-            
+
             // 分块上传函数
             const uploadChunk = async (chunkNumber) => {
                 // 当前文件分块的其实位置以及结束位置
@@ -371,9 +610,11 @@
                 const end = Math.min(file.size, start + chunkSize);
                 // 对应的分块文件内容
                 const chunk = file.slice(start, end);
-                
+                console.log("upload URL = " + `http://${window.location.host}/8${encodeURIComponent(file.name)}`);
+
                 try {
                     const response = await fetch(`http://${window.location.host}/8${encodeURIComponent(file.name)}`, {
+
                         method: "POST",
                         body: chunk,
                         headers: {
@@ -386,13 +627,13 @@
                         },
                         signal: uploadController.signal
                     });
-                    
+
                     if (!response.ok) {
                         throw new Error(`分块 ${chunkNumber} 上传失败: ${response.status}`);
                     }
-                    
+
                     uploadedChunks++;
-                    
+
                     // 所有块上传完成
                     if (uploadedChunks >= totalChunks) {
                         clearInterval(uploadInterval);
@@ -400,12 +641,12 @@
                         statusMessage.textContent = '文件上传成功！';
                         statusMessage.className = 'status-message status-success';
                     }
-                    
+
                     // 上传下一个块（如果不是最后一个）
                     if (chunkNumber < totalChunks - 1) {
                         return uploadChunk(chunkNumber + 1);
                     }
-                    
+
                 } catch (err) {
                     // 保持原有的错误处理逻辑
                     clearInterval(uploadInterval);
@@ -419,10 +660,10 @@
                     throw err; // 继续传播错误
                 }
             };
-            
+
             // 开始上传第一个块
             uploadChunk(0)
-                .catch(() => {}) // 错误已在内部处理
+                .catch(() => { }) // 错误已在内部处理
                 .finally(() => {
                     // 保持原有的finally逻辑
                     uploadBtn.disabled = false;
@@ -441,14 +682,15 @@
                 clearInterval(uploadInterval);
             }
         }
-        
+
         // 初始化应用
         function initApp() {
             initEventListeners();
         }
-        
+
         // 启动应用
         initApp();
     </script>
 </body>
+
 </html>
