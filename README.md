@@ -29,6 +29,8 @@ Linux下C++轻量级Web服务器，助力初学者快速实践网络编程，搭
 - [√] 服务器生成session id和保存cookie状态，过期时间设置为30分钟
 - [x] 浏览器调用摄像头
 - [√] 图像分类系统
+- [√] 目标检测系统
+- [√] 优化文件分块上传模块（分离模块化）
 
 最小堆
 =============
@@ -88,6 +90,30 @@ Cookie​​ 是存储在​​客户端​​（浏览器）的小型文本数�
 
 ![alt text](./images/cookie_session.png)
 ![alt text](./images/cookie_session_id.png)
+
+
+图像分类系统
+==================
+图像分类系统实现流程的思路如下：
+* 第一步：就是浏览器发送要分类的图像（发送文件采用的是分块上传文件）
+* 第二步：接收来自浏览器的图像，然后进行常规的图像分类处理（包括打开图像，加载模型，图像预处理，以及输入模型检测，记录推理时间等）
+* 第三步：将检测的分类结果以及推理时间放入header部分发送给浏览器，浏览器接收并渲染到页面中
+
+![alt text](./images/classification.png)
+![alt text](./images/图像分类流程.png)
+
+
+目标检测系统
+==============
+目标检测系统实现流程的思路如下：
+* 第一步：就是浏览器发送要检测的图像（发送文件采用的是分块上传文件），相比于图像分类，还需要在请求中发送当前设置的IOU阈值以及置信度阈值
+* 第二步：接收来自浏览器的图像，然后进行常规的图像检测处理（包括打开图像，加载模型，图像预处理，以及输入模型检测，记录推理时间等）
+* 第三步：将检测的结果发送给浏览器，浏览器接收并渲染到页面中
+
+注意：目标检测系统相比于图像分类来说会更加的复杂，同时要处理的点也更多，这里有一个问题值得探讨，就是服务端是把检测的结果图像（已经将坐标框绘制到图像上）返回给浏览器呢？还是服务端直接将坐标框和检测置信度结果返回给浏览器呢？这两种方式各有优势和逆势，大家可以好好思考一下，本项目采用的是前一种方式。
+* 如果是把检测结果图像发送给浏览器的话，响应报文中的数据量更大，对于数据的传输负担更大，但是这样的话就不需要前端来帮我们处理坐标框的事情了，并且在前端绘制坐标框的话，还需要考虑当前图像布局大小以及位置关系等问题，而是直接由服务端统一处理之后发送给浏览器，实现起来更容易理解
+* 如果是把检测的坐标框和置信度发送给浏览器的话，那么响应报文数据量更少，有利于传输，但是坐标框和置信度就需要前端来帮我们处理了，考虑的东西也不少，特别是坐标框的绘制一定不能错。
+
 
 编译OpenCV4.5.5
 =========================
@@ -225,6 +251,8 @@ Requests: 211143 susceed, 0 failed.
 
 参考链接
 -----------------
+* [PyTorch加载预训练目标检测模型实现物体检测，同时将预训练模型转换为ONNX模型文件（过程详解）](https://mydreamambitious.blog.csdn.net/article/details/141264876?spm=1011.2415.3001.5331) 
+
 * [QT 6.6.0 基于OpenCV加载.pth模型文件转换之后的ONNX模型文件，并且实现图像分类](https://mydreamambitious.blog.csdn.net/article/details/141180470?spm=1011.2415.3001.5331)
 
 * [QT 6.6.0 基于OpenCV中的cv::dnn::ClassificationModel实现图像分类](https://mydreamambitious.blog.csdn.net/article/details/141230843?spm=1011.2415.3001.5331)
@@ -234,6 +262,24 @@ Requests: 211143 susceed, 0 failed.
 * [FCN图像分割和QT 6.6.0 加载分割FCN_Resnet50.ONNX模型文件进行图像分割（过程详解）](https://mydreamambitious.blog.csdn.net/article/details/141304048?spm=1011.2415.3001.5331)
 
 * [TinyWebServer-v2服务器增加上传和下载文件功能，最小堆代替双链表，界面美化以及服务器生成session id，浏览器保存cookie以及图像分类实现（C/C++）](https://mydreamambitious.blog.csdn.net/article/details/150215367?spm=1011.2415.3001.5331)
+
+* [yolov5目标检测和QT 6.6.0 基于OpenCV加载yolov5.onnx模型文件实现目标检测](https://mydreamambitious.blog.csdn.net/article/details/141291726?spm=1011.2415.3001.5331)
+
+* [QT 6.6.0 中腾讯优图NCNN环境配置以及基于PNNX转NCNN模型文件实现目标检测](https://mydreamambitious.blog.csdn.net/article/details/142664439?spm=1011.2415.3001.5331)
+
+* [FCN图像分割和QT 6.6.0 加载分割FCN_Resnet50.ONNX模型文件进行图像分割（过程详解）](https://mydreamambitious.blog.csdn.net/article/details/141304048?spm=1011.2415.3001.5331)
+
+* [深度学习之模型部署入门 (一），案例实战值得一看（PyTorch，ONNX，ONNX Runtime，Flask，Android Studio，Gradio，Streamlit）](https://mydreamambitious.blog.csdn.net/article/details/142208427?spm=1011.2415.3001.5331)
+
+* [深度学习之模型部署入门 （二），案例实战值得一看（PyTorch，Android Studio，optimize_for_mobile）](https://mydreamambitious.blog.csdn.net/article/details/142523816?spm=1011.2415.3001.5331)
+
+* [深度学习之图像分割模型部署入门 （三），案例实战值得一看（PyTorch，Android Studio，ONNX，optimize_for_mobile）](https://mydreamambitious.blog.csdn.net/article/details/142708948?spm=1011.2415.3001.5331)
+
+* [深度学习之图像和目标检测模型基于pnnx工具转ncnn部署于Android入门 （四），案例实战值得一看（PyTorch，Android Studio，NCNN，PNNX）](https://mydreamambitious.blog.csdn.net/article/details/142588623?spm=1011.2415.3001.5331)
+
+* [深度学习之图像和目标检测模型基于pnnx工具转ncnn部署于Android入门 （四），案例实战值得一看（PyTorch，Android Studio，NCNN，PNNX）](https://mydreamambitious.blog.csdn.net/article/details/142588623?spm=1011.2415.3001.5331)
+
+* [QT 6.6.0中OpenCV三种环境的配置方法以及基本使用例子](https://mydreamambitious.blog.csdn.net/article/details/140998529?spm=1011.2415.3001.5331)
 
 庖丁解牛（来自原文）
 ------------
