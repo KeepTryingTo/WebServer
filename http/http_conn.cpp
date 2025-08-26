@@ -184,6 +184,11 @@ void http_conn::init()
     m_session_id_buf[0] = '\0';
     m_need_set_cookie = false;
     model_name = NULL;
+    m_download = "";
+    iou_threshold = 0;
+    conf_threshold = 0;
+    is_response_result = false;
+    is_objectDetect = false;
 
     memset(m_read_buf, '\0', READ_BUFFER_SIZE);
     memset(m_write_buf, '\0', WRITE_BUFFER_SIZE);
@@ -571,6 +576,28 @@ http_conn::HTTP_CODE http_conn::parse_headers(char *text)
         model_name = text;
         LOG_INFO("Got model name: %ld", model_name);
     }
+    else if (strncasecmp(text, "X-IOU-Threshold:", 16) == 0)
+    {
+        text += 16;
+        text += strspn(text, " \t");
+        iou_threshold = str2f.robust_stof(text);
+        LOG_INFO("Got iou threshold: %lf", iou_threshold);
+    }
+    else if (strncasecmp(text, "X-Confidence-Threshold:", 23) == 0)
+    {
+        text += 23;
+        text += strspn(text, " \t");
+        conf_threshold = str2f.robust_stof(text);
+        LOG_INFO("Got confidence threshold: %lf", conf_threshold);
+    }
+    else if (strncasecmp(text, "X-Image-Size:", 13) == 0)
+    {
+        text += 13;
+        text += strspn(text, " \t");
+        // 格式为：640（不是640x640这样格式）
+        imageHW = std::string(text);
+        LOG_INFO("Got image width and height: %s", imageHW.c_str());
+    }
     else if (strncasecmp(text, "Cookie:", 7) == 0)
     {
         // text 形如 "Cookie: a=1; session_id=abcd...; b=2"
@@ -705,256 +732,6 @@ http_conn::HTTP_CODE http_conn::process_read()
     return NO_REQUEST;
 }
 
-// 新增函数实现
-bool http_conn::is_valid_path(const char *path)
-{
-    return strstr(path, "../") == nullptr &&
-           strstr(path, "..\\") == nullptr &&
-           strstr(path, "%2e%2e") == nullptr;
-}
-
-bool http_conn::save_uploaded_file(const char *filename, const char *data, size_t len)
-{
-    char dir_path[FILENAME_LEN];
-    strcpy(dir_path, doc_root);
-    strcat(dir_path, "/uploads");
-
-    // 创建上传目录（如果不存在）
-    struct stat st;
-    if (stat(dir_path, &st))
-    {
-        mkdir(dir_path, 0755);
-    }
-
-    char full_path[FILENAME_LEN];
-    snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, filename);
-
-    printf("upload file: %s\n", full_path);
-
-    int fd = open(full_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (fd < 0)
-        return false;
-
-    ssize_t written = ::write(fd, data, len);
-    close(fd);
-    return written == static_cast<ssize_t>(len);
-}
-
-/**
- * 保存上传的文件分块
- * @param filename 原始文件名
- * @param data 分块数据
- * @param len 分块长度
- * @param chunk_num 分块序号
- * @param total_chunks 总分块数
- * @return 是否成功
- */
-bool http_conn::save_uploaded_chunk(const char *filename, const char *data, size_t len,
-                                    int chunk_num, int total_chunks)
-{
-    // 创建临时目录存放分块
-    char chunk_dir[FILENAME_LEN];
-    // printf("doc root: %s\n", doc_root);
-    snprintf(chunk_dir, sizeof(chunk_dir), "%s/uploads_chunks", doc_root);
-
-    // 确保临时目录存在
-    struct stat st;
-    if (stat(chunk_dir, &st))
-    {
-        if (mkdir(chunk_dir, 0755))
-        {
-            LOG_ERROR("Cannot create chunk directory: %s", chunk_dir);
-            return false;
-        }
-    }
-
-    // 生成分块临时文件名
-    char chunk_path[FILENAME_LEN];
-    snprintf(chunk_path, sizeof(chunk_path), "%s/%s.part%d", chunk_dir, filename, chunk_num);
-
-    // 写入分块文件
-    FILE *fp = fopen(chunk_path, "wb");
-    if (!fp)
-    {
-        LOG_ERROR("Cannot open chunk file %s: %s", chunk_path, strerror(errno));
-        return false;
-    }
-
-    size_t written = fwrite(data, 1, len, fp);
-    fclose(fp);
-
-    if (written != len)
-    {
-        LOG_ERROR("Incomplete write to chunk file %s: %zu/%zu", chunk_path, written, len);
-        return false;
-    }
-
-    LOG_INFO("Saved chunk %d/%d of %s (%zu bytes)", chunk_num + 1, total_chunks, filename, len);
-    return true;
-}
-
-/**
- * 合并所有分块为完整文件
- * @param filename 原始文件名
- * @param total_chunks 总分块数
- * @return 是否成功
- */
-bool http_conn::merge_uploaded_file(const char *filename, int total_chunks)
-{
-    // 准备最终文件路径
-    char final_path[FILENAME_LEN];
-    snprintf(final_path, sizeof(final_path), "%s/uploads/%s", doc_root, filename);
-
-    // 创建上传目录（如果不存在）
-    char upload_dir[FILENAME_LEN];
-    snprintf(upload_dir, sizeof(upload_dir), "%s/uploads", doc_root);
-
-    struct stat st;
-    if (stat(upload_dir, &st))
-    {
-        if (mkdir(upload_dir, 0755))
-        {
-            LOG_ERROR("Cannot create upload directory: %s", upload_dir);
-            return false;
-        }
-    }
-
-    // 打开最终文件
-    FILE *final_fp = fopen(final_path, "wb");
-    if (!final_fp)
-    {
-        LOG_ERROR("Cannot open final file %s: %s", final_path, strerror(errno));
-        return false;
-    }
-
-    // 分块临时目录
-    char chunk_dir[FILENAME_LEN];
-    snprintf(chunk_dir, sizeof(chunk_dir), "%s/uploads_chunks", doc_root);
-
-    // 合并所有分块
-    bool success = true;
-    char chunk_path[FILENAME_LEN];
-    char buffer[65536]; // 64KB缓冲区
-
-    // 读取所有的分块文件然后进行合并
-    for (int i = 0; i < total_chunks; i++)
-    {
-        // 当前索引文件
-        snprintf(chunk_path, sizeof(chunk_path), "%s/%s.part%d", chunk_dir, filename, i);
-
-        FILE *chunk_fp = fopen(chunk_path, "rb");
-        if (!chunk_fp)
-        {
-            LOG_ERROR("Cannot open chunk file %s: %s", chunk_path, strerror(errno));
-            success = false;
-            break;
-        }
-
-        // 读取并写入分块内容
-        size_t bytes_read;
-        while ((bytes_read = fread(buffer, 1, sizeof(buffer), chunk_fp)))
-        {
-            size_t bytes_written = fwrite(buffer, 1, bytes_read, final_fp);
-            if (bytes_written != bytes_read)
-            {
-                LOG_ERROR("Write failed for chunk %d", i);
-                success = false;
-                break;
-            }
-        }
-
-        fclose(chunk_fp);
-
-        // 删除已合并的分块
-        if (unlink(chunk_path))
-        {
-            LOG_WARN("Cannot delete chunk file %s: %s", chunk_path, strerror(errno));
-        }
-
-        if (!success)
-            break;
-    }
-
-    fclose(final_fp);
-
-    // 如果合并失败，删除不完整的最终文件
-    if (!success)
-    {
-        unlink(final_path);
-        return false;
-    }
-
-    LOG_INFO("Successfully merged %d chunks into %s", total_chunks, final_path);
-    return true;
-}
-
-/**
- * 清理指定文件的所有分块
- * @param filename 原始文件名
- */
-void http_conn::cleanup_chunks()
-{
-    char chunk_dir[FILENAME_LEN];
-    snprintf(chunk_dir, sizeof(chunk_dir), "%s/uploads_chunks", doc_root);
-
-    DIR *dir = opendir(chunk_dir);
-    if (!dir)
-    {
-        LOG_WARN("Cannot open chunk directory: %s", chunk_dir);
-        return;
-    }
-
-    struct dirent *entry;
-    // 遍历当前目录下的文件
-    while ((entry = readdir(dir)) != NULL)
-    {
-        const char *name = entry->d_name;
-        // printf("entry -> d_name = %s\n", name);
-        size_t len = strlen(name);
-
-        // 检查文件名格式：<原始文件名>.part<数字>
-        // 例如：filename.png.part0
-        const char *part_ptr = strstr(name, ".part");
-        if (part_ptr && part_ptr > name)
-        { // 确保.part前面有内容
-            // 验证.part后是否为纯数字
-            const char *num_ptr = part_ptr + 5; // 跳过".part"
-            if (is_all_digits(num_ptr))
-            {
-                char chunk_path[FILENAME_LEN];
-                snprintf(chunk_path, sizeof(chunk_path), "%s/%s", chunk_dir, name);
-
-                if (unlink(chunk_path) != 0)
-                {
-                    LOG_WARN("Failed to delete chunk file: %s (%s)",
-                             chunk_path, strerror(errno));
-                }
-                else
-                {
-                    LOG_INFO("Deleted chunk file: %s", chunk_path);
-                }
-            }
-        }
-    }
-
-    closedir(dir);
-}
-
-// 辅助函数：检查字符串是否全为数字
-bool http_conn::is_all_digits(const char *str)
-{
-    if (!str || *str == '\0')
-        return false;
-
-    while (*str)
-    {
-        if (!isdigit(*str))
-            return false;
-        str++;
-    }
-    return true;
-}
-
 bool http_conn::process_image_classification(const char *image_path)
 {
     char model_file[160];
@@ -994,8 +771,64 @@ bool http_conn::process_image_classification(const char *image_path)
     return true;
 }
 
+bool http_conn::process_image_objectDetection(const char *image_path)
+{
+    char model_file[160];
+    snprintf(model_file, sizeof(model_file), "%s/%s/%s.onnx", doc_root, "model_weights", model_name);
+    printf("model path = %s\n", model_file);
+    printf("objectDetect image path = %s\n", image_path);
+    printf("IOU Threshold = %lf\n", iou_threshold);
+    printf("Conf Threshold = %lf\n", conf_threshold);
+
+    LOG_INFO("model path = %s\n", model_file);
+    LOG_INFO("objectDetect image path = %s\n", image_path);
+    LOG_INFO("IOU Threshold = %lf\n", iou_threshold);
+    LOG_INFO("Conf Threshold = %lf\n", conf_threshold);
+
+    // 解析前端选择的图像大小
+    size_t imgH = atol(imageHW.c_str());
+    size_t imgW = atol(imageHW.c_str());
+    printf("object image h = %ld\n", imgH);
+    printf("object image w = %ld\n", imgW);
+    LOG_INFO("object image h = %ld\n", imgH);
+    LOG_INFO("object image w = %ld\n", imgW);
+    // 实例化对象
+    ObjectDetection obj(std::string(image_path), std::string(model_file),
+                        imgH, imgW, iou_threshold,
+                        conf_threshold, 1, 0);
+    try
+    {
+        // 设置相关属性
+        obj.setImagePath(std::string(image_path));
+        obj.setMdoelPath(std::string(model_file));
+        obj.setImgWH(imgH, imgW);
+
+        obj.openImage();
+        obj.openModel();
+
+        // 执行推理
+        obj.predictImage();
+
+        // obj.encodeImage(obj.getImage());
+
+        g_obj = obj;
+
+        LOG_INFO("Image detect: %s (model: %s)", image_path, model_name);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+        LOG_INFO("Image detect: %s (model: %s)", image_path, model_name);
+    }
+
+    return true;
+}
+
 http_conn::HTTP_CODE http_conn::do_request()
 {
+    // 上传文件模块
+    UploadFile up_file(this->doc_root, this->m_close_log);
+
     // 服务端路径
     strcpy(m_real_file, doc_root);
     int len = strlen(doc_root);
@@ -1056,7 +889,7 @@ http_conn::HTTP_CODE http_conn::do_request()
     }
 
     // 在do_request()的最前面添加上传文件：
-    if (actual_method == PUT && (*(p + 1) == '8' || (*(p + 1) == '1' && *(p + 2) == '0')))
+    if (actual_method == PUT && (*(p + 1) == '8' || (*(p + 1) == '1' && *(p + 2) == '0') || (*(p + 1) == '1' && *(p + 2) == '1')))
     {
         char *filename = NULL;
         if (*(p + 1) == '8')
@@ -1069,6 +902,11 @@ http_conn::HTTP_CODE http_conn::do_request()
             filename = m_url + 3;
             printf("classify upload file\n");
         }
+        else if (*(p + 1) == '1' && *(p + 2) == '1')
+        {
+            filename = m_url + 3;
+            printf("object detect file\n");
+        }
 
         // 获取分块信息头：块的大小以及总的块数量
         int chunk_num = chunk_header, total_chunks = total_header;
@@ -1079,39 +917,89 @@ http_conn::HTTP_CODE http_conn::do_request()
         if (total_chunks > 1)
         {
             // 分块上传文件
-            save_result = save_uploaded_chunk(filename, m_string, m_content_length,
-                                              chunk_num, total_chunks);
+            save_result = up_file.save_uploaded_chunk(filename, m_string, m_content_length,
+                                                      chunk_num, total_chunks);
 
             // 如果是最后一个分块，合并文件
             if (save_result && chunk_num == total_chunks - 1)
             {
-                save_result = merge_uploaded_file(filename, total_chunks);
+                save_result = up_file.merge_uploaded_file(filename, total_chunks);
                 is_merge_file = true;
             }
         }
         else
         {
             // 单块直接保存
-            save_result = save_uploaded_file(filename, m_string, m_content_length);
+            save_result = up_file.save_uploaded_file(filename, m_string, m_content_length);
         }
 
         // 如果是图像分类,并且等图像完整的上传完整之后，那么还需要进行分类检测
         if (this->model_name != NULL && save_result)
         {
             printf("model name = %s is merge file = %d\n", this->model_name, is_merge_file);
-            if (is_merge_file || total_chunks <= 1)
+            // 图像分类
+            if ((is_merge_file || total_chunks <= 1) && (*(p + 1) == '1' && *(p + 2) == '0'))
             {
                 char image_file[300];
                 snprintf(image_file, sizeof(image_file), "%s/%s/%s", doc_root, "uploads", filename);
-
-                add_status_line(200, ok_200_title);
                 process_image_classification(image_file);
+                is_response_result = true;
+                is_merge_file = false;
+            }
+            // 目标检测
+            else if ((is_merge_file || total_chunks <= 1) && (*(p + 1) == '1' && *(p + 2) == '1'))
+            {
+                char image_file[300];
+                snprintf(image_file, sizeof(image_file), "%s/%s/%s", doc_root, "uploads", filename);
+                process_image_objectDetection(image_file);
+
+                try
+                {
+
+                    snprintf(save_path, sizeof(save_path), "%s/%s/%s", doc_root, "outputs", filename);
+
+                    // 获得结果图像（坐标框绘制之后的结果）
+                    cv::Mat Image = g_obj.getImageObj();
+                    // 获得原始图像大小
+                    pair<size_t, size_t> org_img_hw = g_obj.getOrgImgHW();
+                    // 将图像从(640, 640)还原回原始图像大小
+                    cv::resize(Image, Image, cv::Size(org_img_hw.second, org_img_hw.first));
+
+                    printf("image wh = %ld, %ld\n", org_img_hw.first, org_img_hw.second);
+                    cv::imwrite(save_path, Image);
+
+                    // g_obj.encodeImage(Image);
+                    // // 状态行
+                    // add_status_line(200, ok_200_title);
+                    // // 标准头
+                    // add_headers(g_obj.getImageDataLength());
+                    // add_response("Content-Type:%s\r\n", "image/jpeg");
+                    // add_response("X-Model-Used:%s\r\n", model_name);
+                    // add_response("X-Inference-Time:%s\r\n", std::to_string(g_obj.getInferTime()).c_str());
+                    // add_response("X-Detect-Count:%s\r\n", std::to_string(g_obj.getDetectCount()).c_str());
+                    // // 空行
+                    // add_blank_line();
+
+                    // // 内容
+                    // add_content(reinterpret_cast<char *>(g_obj.getEncodeImage()));
+                    // return NO_RESOURCE;
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << e.what() << '\n';
+                }
+
+                is_objectDetect = true;
+                is_merge_file = false;
+            }
+            else if ((is_merge_file || total_chunks <= 1) && (*(p + 1) == '1' && *(p + 2) == '2'))
+            { // 语义分割
             }
         }
         // 清理分块上传文件保存的哪些文件信息
         if (is_merge_file || total_chunks <= 1)
         {
-            cleanup_chunks();
+            up_file.cleanup_chunks();
         }
     }
     else if (cgi == 1 && (*(p + 1) == '2' || *(p + 1) == '3'))
@@ -1213,9 +1101,14 @@ http_conn::HTTP_CODE http_conn::do_request()
             char *m_url_real = (char *)malloc(sizeof(char) * 200);
             strcpy(m_url_real, "/classification.html");
             strncpy(m_real_file + len, m_url_real, FILENAME_LEN - len - 1);
-            // printf("m_real_file = %s\n", m_real_file);
             free(m_url_real);
-            printf("classification.html %s\n", "upload image");
+        }
+        else if (*(p + 2) == '1')
+        {
+            char *m_url_real = (char *)malloc(sizeof(char) * 200);
+            strcpy(m_url_real, "/objectDetection.html");
+            strncpy(m_real_file + len, m_url_real, FILENAME_LEN - len - 1);
+            free(m_url_real);
         }
         else
         {
@@ -1269,16 +1162,14 @@ http_conn::HTTP_CODE http_conn::do_request()
         // 1. 处理下载页面请求
         if (strstr(filename, "download.html") != nullptr)
         {
-            // printf("%s len = %d\n", filename, strlen(filename));
             char *m_url_real = (char *)malloc(sizeof(char) * 200);
             strcpy(m_url_real, "/download.html");
             strncpy(m_real_file + len, m_url_real, FILENAME_LEN - len - 1);
-            // printf("m_real_file = %s\n", m_real_file);
             free(m_url_real);
         }
         else
         {
-            // 2. 处理实际文件下载
+            // 2. 处理实际文件下载（前端点击选择下载文件请求，然后走这条路由）
             char filepath[FILENAME_LEN];
             snprintf(filepath, sizeof(filepath), "%s/uploads/%s", doc_root, filename);
 
@@ -1350,7 +1241,9 @@ http_conn::HTTP_CODE http_conn::do_request()
 
         add_status_line(200, ok_200_title);
         add_headers(json.size());
+        add_blank_line();
         add_content(json.c_str());
+        return NO_RESOURCE;
     }
     else if (*(p + 1) == 'b')
     {
@@ -1372,19 +1265,29 @@ http_conn::HTTP_CODE http_conn::do_request()
         strncpy(m_real_file + len, m_url, FILENAME_LEN - len - 1);
 
     printf("%s %d session id = %s\n", __FILE__, __LINE__, m_session_id.c_str());
-
-    // 如果stat()返回负数（通常为-1），表示文件不存在或不可访问，返回NO_RESOURCE错误
-    if (stat(m_real_file, &m_file_stat) < 0)
-        return NO_RESOURCE;
-    // 检查文件读写权限
-    if (!(m_file_stat.st_mode & S_IROTH))
-        return FORBIDDEN_REQUEST;
-    // 禁止目录访问
-    if (S_ISDIR(m_file_stat.st_mode))
-        return BAD_REQUEST;
-
     // 打开文件
     printf("m_real_file: %s\n", m_real_file);
+
+    // 如果是目标检测的话，就将最后的检测结果图响应给浏览器渲染出来
+    if (is_objectDetect)
+    {
+        strcpy(m_real_file, save_path);
+    }
+
+    // 如果stat()返回负数（通常为-1），表示文件不存在或不可访问，返回NO_RESOURCE错误;
+    // 如果是目录的话也会返回 >=0，并不一定是具有后缀名的文件
+    if (stat(m_real_file, &m_file_stat) < 0)
+        return NO_RESOURCE;
+    // 检查文件读写权限（S_IROTH表示其他用户可读）
+    if (!(m_file_stat.st_mode & S_IROTH))
+        return FORBIDDEN_REQUEST;
+    // 禁止目录访问（判断是否为目录）
+    if (S_ISDIR(m_file_stat.st_mode))
+    {
+        printf("%s %d %s\n", __FILE__, __LINE__, "here --->");
+        return BAD_REQUEST;
+    }
+
     int fd = open(m_real_file, O_RDONLY);
     /*
         打开文件并内存映射
@@ -1547,75 +1450,110 @@ bool http_conn::process_write(HTTP_CODE ret)
     {
     case INTERNAL_ERROR: // 服务器内部错误
     {
+        printf("INTERAL_ERROR---->\n");
         add_status_line(500, error_500_title);
         add_headers(strlen(error_500_form));
+        // 判断添加的内容是否超过了指定缓冲区大小
         if (!add_content(error_500_form))
             return false;
         break;
     }
     case BAD_REQUEST: // 错误请求
     {
+        printf("BAD_REQUEST---->\n");
         add_status_line(404, error_404_title);
         add_headers(strlen(error_404_form));
+        // 判断添加的内容是否超过了指定缓冲区大小
         if (!add_content(error_404_form))
             return false;
         break;
     }
     case FORBIDDEN_REQUEST: // 禁止访问
     {
+        printf("FORBIDDEN_REQUEST---->\n");
         add_status_line(403, error_403_title);
         add_headers(strlen(error_403_form));
+        // 判断添加的内容是否超过了指定缓冲区大小
         if (!add_content(error_403_form))
             return false;
         break;
     }
     case FILE_REQUEST: // 文件请求
     {
-        add_status_line(200, ok_200_title);
-        // 如果是下载文件，添加Content-Disposition头
-        if (m_upload_filename != NULL)
+        if (!is_objectDetect)
         {
-            add_content_disposition(m_upload_filename);
-            m_upload_filename = NULL;
+            printf("FILE_REQUEST---->\n");
+            add_status_line(200, ok_200_title);
+            // 如果是下载文件，添加Content-Disposition头
+            if (m_upload_filename != NULL)
+            {
+                add_content_disposition(m_upload_filename);
+                m_upload_filename = NULL;
+            }
+            // 只有当浏览器第一次请求的消息中没有cookie时，服务器会生成一个cookie，那么这个时候就需要去设置cookie
+            if (m_need_set_cookie)
+            {
+                add_response("Set-Cookie: session_id=%s; Path=/; HttpOnly; SamaSite=Lax\r\n", m_session_id.c_str());
+                m_need_set_cookie = false;
+            }
         }
-        // 只有当浏览器第一次请求的消息中没有cookie时，服务器会生成一个cookie，那么这个时候就需要去设置cookie
-        if (m_need_set_cookie)
-        {
-            add_response("Set-Cookie: session_id=%s; Path=/; HttpOnly; SamaSite=Lax\r\n", m_session_id.c_str());
-            m_need_set_cookie = false;
-        }
+
         // 文件大小不为0（确实有信息需要发送）
         if (m_file_stat.st_size != 0)
         {
-            add_headers(m_file_stat.st_size);
-
-            // 填写自定义字段（一定要注意响应的格式： 状态行 → 标准头字段 → CORS字段 → 自定义字段）
-            if (model_name)
+            // 针对图像分类
+            if (!is_objectDetect)
             {
-                // 4. 关键改进：将关键数据同时放入头部
-                printf("add classification result to header\n");
-                add_response("X-Model-Used:%s\r\n", model_name);
-                add_response("X-Top-Class:%s\r\n", g_cls.getPredResult().c_str());
-                add_response("X-Confidence:%s\r\n", std::to_string(g_cls.getPredProb()).c_str());
-                add_response("X-Inference-Time:%s\r\n", std::to_string(g_cls.getInferTime()).c_str());
+                add_headers(m_file_stat.st_size);
 
-                // 5. 可选：添加调试信息
-                add_response("X-Predictions-Count:%s\r\n", "1");
+                // 填写自定义字段（一定要注意响应的格式： 状态行 → 标准头字段 → CORS字段 → 自定义字段）
+                // 针对分类
+                if (model_name && is_response_result)
+                {
+                    // 4. 关键改进：将关键数据同时放入头部
+                    printf("add classification result to header\n");
+                    add_response("X-Model-Used:%s\r\n", model_name);
+                    add_response("X-Top-Class:%s\r\n", g_cls.getPredResult().c_str());
+                    add_response("X-Confidence:%s\r\n", std::to_string(g_cls.getPredProb()).c_str());
+                    add_response("X-Inference-Time:%s\r\n", std::to_string(g_cls.getInferTime()).c_str());
+
+                    // 5. 可选：添加调试信息
+                    add_response("X-Predictions-Count:%s\r\n", "1");
+                    model_name = NULL;
+                }
+            }
+            // 针对目标检测结果返回
+            else if (is_objectDetect)
+            {
+                // 状态行
+                add_status_line(200, ok_200_title);
+                // 标准头
+                add_headers(m_file_stat.st_size);
+                // add_response("Content-Type:%s\r\n", "image/jpeg");
+                add_content_type();
+                add_response("X-Model-Used:%s\r\n", model_name);
+                add_response("X-Inference-Time:%s\r\n", std::to_string(g_obj.getInferTime()).c_str());
+                add_response("X-Detect-Count:%s\r\n", std::to_string(g_obj.getDetectCount()).c_str());
+
+                // 内容
+                is_objectDetect = false;
                 model_name = NULL;
             }
-            // 添加空行
+            // 空行
             add_blank_line();
-            printf("m_file_stat.size: %d\n", m_file_stat.st_size);
             // printf("process write...");
             // 第一个iovec指针指向响应报文缓冲区，长度指向m_write_idx
             m_iv[0].iov_base = m_write_buf;
             m_iv[0].iov_len = m_write_idx;
+
             // 第二个iovec指针指向mmap返回的文件指针(比如.html文件之类的文件内容)，长度指向文件大小
             m_iv[1].iov_base = m_file_address;
             m_iv[1].iov_len = m_file_stat.st_size;
             m_iv_count = 2;
             // 发送的全部数据为响应报文头部信息和文件大小
             bytes_to_send = m_write_idx + m_file_stat.st_size;
+            printf("m_file_stat.size: %d\n", m_file_stat.st_size);
+
             return true;
         }
         else
@@ -1628,8 +1566,11 @@ bool http_conn::process_write(HTTP_CODE ret)
         }
     }
     default:
-        return false;
+        printf("default ---> \n");
+        // return false;
+        break;
     }
+
     m_iv[0].iov_base = m_write_buf;
     m_iv[0].iov_len = m_write_idx;
     m_iv_count = 1;
@@ -1645,6 +1586,7 @@ void http_conn::process()
         modfd(m_epollfd, m_sockfd, EPOLLIN, m_TRIGMode);
         return;
     }
+    // printf("read ret = %d\n", read_ret);
     bool write_ret = process_write(read_ret);
     // 如果读取出现问题，则关闭连接，并且注册写事件到epoll上，表示需要继续监听当前写事件
     if (!write_ret)

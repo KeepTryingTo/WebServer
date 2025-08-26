@@ -33,6 +33,9 @@
 #include "../timer/lst_timer.h"
 #include "../log/log.h"
 #include "../deepLearning/classify/classification.h"
+#include "str2float.h"
+#include "../deepLearning/objectDetect/objectDetection.h"
+#include "upload_file.h"
 
 struct session_info
 {
@@ -51,7 +54,7 @@ class http_conn
 public:
     // 定义文件长度，读和写缓冲区大小
     static const int FILENAME_LEN = 200;
-    static const int READ_BUFFER_SIZE = 2048 * 32;
+    static const int READ_BUFFER_SIZE = 2048 * 128;
     static const int WRITE_BUFFER_SIZE = 1024 * 32;
     static const size_t MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
     // HTTP各种请求
@@ -137,16 +140,7 @@ private:
     bool add_content_length(int content_length);
     bool add_linger();
     bool add_blank_line();
-
-    // 上传文件模块
-    bool save_uploaded_file(const char *filename, const char *data, size_t len);
-    bool is_valid_path(const char *path);
     bool add_content_disposition(const char *filename);
-    bool save_uploaded_chunk(const char *filename, const char *data, size_t len,
-                             int chunk_num, int total_chunks);
-    void cleanup_chunks();
-    bool is_all_digits(const char *str);
-    bool merge_uploaded_file(const char *filename, int total_chunks);
 
 public:
     static int m_epollfd;
@@ -207,6 +201,7 @@ private:
     int total_header;
     char *m_upload_filename;
     long int m_file_size;
+    std::string m_download;
 
     // session  + cookie
     static map<std::string, session_info> sessions;
@@ -231,6 +226,20 @@ private:
     char *model_name;
     std::map<std::string, std::string> form_fields;
     bool process_image_classification(const char *image_path);
+    bool is_response_result; // 如果图像分类完成，就设置为true，表示可以将结果响应给浏览器了
+
+    // 目标检测系统
+    float iou_threshold;
+    float conf_threshold;
+    std::string imageHW; // 对于目标检测模型输入图像的大小要求
+    ObjectDetection g_obj;
+    bool is_objectDetect;
+    // 保存结果图像
+    char save_path[FILENAME_LEN];
+    bool process_image_objectDetection(const char *image_path);
+
+    // 浮点数字符串转换为数字浮点数
+    Str2Float str2f;
 };
 
 #endif
