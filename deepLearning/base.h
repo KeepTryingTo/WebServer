@@ -43,6 +43,10 @@ public:
         this->img_height = img_height;
         this->img_width = img_width;
     }
+    void setImage(cv::Mat &image)
+    {
+        this->Image = image;
+    }
 
     std::string getImagePath() const
     {
@@ -76,9 +80,9 @@ public:
     }
 
     long long get_current_time_ms();
-    void openModel();
-    void openImage();
 
+    virtual void openImage();
+    virtual void openModel();
     virtual cv::Mat createBatch(cv::Mat &img);
     virtual cv::Mat normalizeBlob(cv::Mat &inputBlob, cv::Scalar &mean, cv::Scalar &std);
 

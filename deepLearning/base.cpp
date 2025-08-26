@@ -68,8 +68,6 @@ void Base::openImage()
         LOG_ERROR("%s %d %s", __FILE__, __LINE__, "this image read is failed!");
         return;
     }
-
-    cv::resize(this->Image, this->Image, cv::Size(this->img_width, this->img_height));
 }
 
 void Base::openModel()
