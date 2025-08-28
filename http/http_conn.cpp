@@ -824,6 +824,53 @@ bool http_conn::process_image_objectDetection(const char *image_path)
     return true;
 }
 
+bool http_conn::process_image_segmentation(const char *image_path)
+{
+    char model_file[160];
+    snprintf(model_file, sizeof(model_file), "%s/%s/%s.onnx", doc_root, "model_weights", model_name);
+    printf("model path = %s\n", model_file);
+    printf("segmentation image path = %s\n", image_path);
+
+    LOG_INFO("model path = %s\n", model_file);
+    LOG_INFO("segmentation image path = %s\n", image_path);
+
+    // 解析前端选择的图像大小
+    size_t imgH = atol(imageHW.c_str());
+    size_t imgW = atol(imageHW.c_str());
+    printf("segmentation image h = %ld\n", imgH);
+    printf("segmentation image w = %ld\n", imgW);
+    LOG_INFO("segmentation image h = %ld\n", imgH);
+    LOG_INFO("segmentation image w = %ld\n", imgW);
+    // 实例化对象
+    Segmentation seg(std::string(image_path), std::string(model_file),
+                     imgH, imgW, 1, 0);
+    try
+    {
+        // 设置相关属性
+        seg.setImagePath(std::string(image_path));
+        seg.setMdoelPath(std::string(model_file));
+        seg.setImgWH(imgH, imgW);
+
+        seg.openImage();
+        seg.openModel();
+
+        printf("open model  is success!\n");
+        // 执行推理
+        seg.predictImage();
+
+        g_seg = seg;
+
+        LOG_INFO("Image detect: %s (model: %s)", image_path, model_name);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+        LOG_INFO("Image detect: %s (model: %s)", image_path, model_name);
+    }
+
+    return true;
+}
+
 http_conn::HTTP_CODE http_conn::do_request()
 {
     // 上传文件模块
@@ -889,7 +936,7 @@ http_conn::HTTP_CODE http_conn::do_request()
     }
 
     // 在do_request()的最前面添加上传文件：
-    if (actual_method == PUT && (*(p + 1) == '8' || (*(p + 1) == '1' && *(p + 2) == '0') || (*(p + 1) == '1' && *(p + 2) == '1')))
+    if (actual_method == PUT && (*(p + 1) == '8' || (*(p + 1) == '1' && *(p + 2) == '0') || (*(p + 1) == '1' && *(p + 2) == '1') || (*(p + 1) == '1' && *(p + 2) == '2')))
     {
         char *filename = NULL;
         if (*(p + 1) == '8')
@@ -906,6 +953,11 @@ http_conn::HTTP_CODE http_conn::do_request()
         {
             filename = m_url + 3;
             printf("object detect file\n");
+        }
+        else if ((*(p + 1) == '1' && *(p + 2) == '2'))
+        {
+            filename = m_url + 3;
+            printf("segmentation file\n");
         }
 
         // 获取分块信息头：块的大小以及总的块数量
@@ -967,22 +1019,6 @@ http_conn::HTTP_CODE http_conn::do_request()
 
                     printf("image wh = %ld, %ld\n", org_img_hw.first, org_img_hw.second);
                     cv::imwrite(save_path, Image);
-
-                    // g_obj.encodeImage(Image);
-                    // // 状态行
-                    // add_status_line(200, ok_200_title);
-                    // // 标准头
-                    // add_headers(g_obj.getImageDataLength());
-                    // add_response("Content-Type:%s\r\n", "image/jpeg");
-                    // add_response("X-Model-Used:%s\r\n", model_name);
-                    // add_response("X-Inference-Time:%s\r\n", std::to_string(g_obj.getInferTime()).c_str());
-                    // add_response("X-Detect-Count:%s\r\n", std::to_string(g_obj.getDetectCount()).c_str());
-                    // // 空行
-                    // add_blank_line();
-
-                    // // 内容
-                    // add_content(reinterpret_cast<char *>(g_obj.getEncodeImage()));
-                    // return NO_RESOURCE;
                 }
                 catch (const std::exception &e)
                 {
@@ -994,6 +1030,32 @@ http_conn::HTTP_CODE http_conn::do_request()
             }
             else if ((is_merge_file || total_chunks <= 1) && (*(p + 1) == '1' && *(p + 2) == '2'))
             { // 语义分割
+                char image_file[300];
+                snprintf(image_file, sizeof(image_file), "%s/%s/%s", doc_root, "uploads", filename);
+                process_image_segmentation(image_file);
+
+                try
+                {
+
+                    snprintf(save_path, sizeof(save_path), "%s/%s/%s", doc_root, "outputs", filename);
+
+                    // 获得结果图像（坐标框绘制之后的结果）
+                    cv::Mat Image = g_seg.getImageObj();
+                    // 获得原始图像大小
+                    pair<size_t, size_t> org_img_hw = g_seg.getOrgImgHW();
+                    // 将图像从(640, 640)还原回原始图像大小
+                    cv::resize(Image, Image, cv::Size(org_img_hw.second, org_img_hw.first));
+
+                    printf("image wh = %ld, %ld\n", org_img_hw.first, org_img_hw.second);
+                    cv::imwrite(save_path, Image);
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << e.what() << '\n';
+                }
+
+                is_segmentation = true;
+                is_merge_file = false;
             }
         }
         // 清理分块上传文件保存的哪些文件信息
@@ -1107,6 +1169,13 @@ http_conn::HTTP_CODE http_conn::do_request()
         {
             char *m_url_real = (char *)malloc(sizeof(char) * 200);
             strcpy(m_url_real, "/objectDetection.html");
+            strncpy(m_real_file + len, m_url_real, FILENAME_LEN - len - 1);
+            free(m_url_real);
+        }
+        else if (*(p + 2) == '2')
+        {
+            char *m_url_real = (char *)malloc(sizeof(char) * 200);
+            strcpy(m_url_real, "/segmentation.html");
             strncpy(m_real_file + len, m_url_real, FILENAME_LEN - len - 1);
             free(m_url_real);
         }
@@ -1269,7 +1338,7 @@ http_conn::HTTP_CODE http_conn::do_request()
     printf("m_real_file: %s\n", m_real_file);
 
     // 如果是目标检测的话，就将最后的检测结果图响应给浏览器渲染出来
-    if (is_objectDetect)
+    if (is_objectDetect || is_segmentation)
     {
         strcpy(m_real_file, save_path);
     }
@@ -1501,11 +1570,10 @@ bool http_conn::process_write(HTTP_CODE ret)
         // 文件大小不为0（确实有信息需要发送）
         if (m_file_stat.st_size != 0)
         {
+            add_headers(m_file_stat.st_size);
             // 针对图像分类
             if (!is_objectDetect)
             {
-                add_headers(m_file_stat.st_size);
-
                 // 填写自定义字段（一定要注意响应的格式： 状态行 → 标准头字段 → CORS字段 → 自定义字段）
                 // 针对分类
                 if (model_name && is_response_result)
@@ -1525,11 +1593,6 @@ bool http_conn::process_write(HTTP_CODE ret)
             // 针对目标检测结果返回
             else if (is_objectDetect)
             {
-                // 状态行
-                add_status_line(200, ok_200_title);
-                // 标准头
-                add_headers(m_file_stat.st_size);
-                // add_response("Content-Type:%s\r\n", "image/jpeg");
                 add_content_type();
                 add_response("X-Model-Used:%s\r\n", model_name);
                 add_response("X-Inference-Time:%s\r\n", std::to_string(g_obj.getInferTime()).c_str());
@@ -1537,6 +1600,14 @@ bool http_conn::process_write(HTTP_CODE ret)
 
                 // 内容
                 is_objectDetect = false;
+                model_name = NULL;
+            }
+            else if (is_segmentation)
+            {
+                add_content_type();
+                add_response("X-Model-Used:%s\r\n", model_name);
+                add_response("X-Inference-Time:%s\r\n", std::to_string(g_obj.getInferTime()).c_str());
+                is_segmentation = false;
                 model_name = NULL;
             }
             // 空行

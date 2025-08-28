@@ -36,6 +36,7 @@
 #include "str2float.h"
 #include "../deepLearning/objectDetect/objectDetection.h"
 #include "upload_file.h"
+#include "../deepLearning/segmentation/segmentation.h"
 
 struct session_info
 {
@@ -240,6 +241,11 @@ private:
 
     // 浮点数字符串转换为数字浮点数
     Str2Float str2f;
+
+    // 语义分割系统实现
+    bool is_segmentation;
+    Segmentation g_seg;
+    bool process_image_segmentation(const char *image_path);
 };
 
 #endif
