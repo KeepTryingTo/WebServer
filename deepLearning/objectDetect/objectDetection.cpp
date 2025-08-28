@@ -23,7 +23,7 @@ ObjectDetection::ObjectDetection(std::string imgpath,
     this->org_imgH = 0;
     this->org_imgW = 0;
 
-    std::string cls_path = "../../root/model_weights/classes.txt";
+    std::string cls_path = "/home/ubuntu/Documents/KTG/myPro/myProject/myTinyWebServer-v2/root/model_weights/classes.txt";
     if (!this->readFile(cls_path))
     {
         printf("please make sure your file is exist!");
@@ -80,7 +80,7 @@ ObjectDetection::ObjectDetection(const ObjectDetection &obj)
 {
     // 可添加其他初始化代码
     this->detect_count = obj.detect_count;
-    Image = obj.detect_count;
+    Image = obj.Image;
     this->org_imgH = obj.org_imgH;
     this->org_imgW = obj.org_imgW;
 }
