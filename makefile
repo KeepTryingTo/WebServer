@@ -34,7 +34,8 @@ SRCS = main.cpp \
        ./deepLearning/base.cpp \
        ./deepLearning/classify/classification.cpp \
        ./deepLearning/objectDetect/objectDetection.cpp \
-       ./http/upload_file.cpp
+       ./http/upload_file.cpp \
+       ./deepLearning/segmentation/segmentation.cpp
 
 LIBS = -lpthread -lmysqlclient $(OPENCV_LIBS)
 # 添加 OpenCV 头文件路径
