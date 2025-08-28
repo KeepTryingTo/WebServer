@@ -1341,6 +1341,7 @@ http_conn::HTTP_CODE http_conn::do_request()
     if (is_objectDetect || is_segmentation)
     {
         strcpy(m_real_file, save_path);
+        save_path[0] = '\0';
     }
 
     // 如果stat()返回负数（通常为-1），表示文件不存在或不可访问，返回NO_RESOURCE错误;
@@ -1549,22 +1550,19 @@ bool http_conn::process_write(HTTP_CODE ret)
     }
     case FILE_REQUEST: // 文件请求
     {
-        if (!is_objectDetect)
+        printf("FILE_REQUEST---->\n");
+        add_status_line(200, ok_200_title);
+        // 如果是下载文件，添加Content-Disposition头
+        if (m_upload_filename != NULL)
         {
-            printf("FILE_REQUEST---->\n");
-            add_status_line(200, ok_200_title);
-            // 如果是下载文件，添加Content-Disposition头
-            if (m_upload_filename != NULL)
-            {
-                add_content_disposition(m_upload_filename);
-                m_upload_filename = NULL;
-            }
-            // 只有当浏览器第一次请求的消息中没有cookie时，服务器会生成一个cookie，那么这个时候就需要去设置cookie
-            if (m_need_set_cookie)
-            {
-                add_response("Set-Cookie: session_id=%s; Path=/; HttpOnly; SamaSite=Lax\r\n", m_session_id.c_str());
-                m_need_set_cookie = false;
-            }
+            add_content_disposition(m_upload_filename);
+            m_upload_filename = NULL;
+        }
+        // 只有当浏览器第一次请求的消息中没有cookie时，服务器会生成一个cookie，那么这个时候就需要去设置cookie
+        if (m_need_set_cookie)
+        {
+            add_response("Set-Cookie: session_id=%s; Path=/; HttpOnly; SamaSite=Lax\r\n", m_session_id.c_str());
+            m_need_set_cookie = false;
         }
 
         // 文件大小不为0（确实有信息需要发送）
@@ -1572,7 +1570,7 @@ bool http_conn::process_write(HTTP_CODE ret)
         {
             add_headers(m_file_stat.st_size);
             // 针对图像分类
-            if (!is_objectDetect)
+            if (is_objectDetect == false && is_segmentation == false)
             {
                 // 填写自定义字段（一定要注意响应的格式： 状态行 → 标准头字段 → CORS字段 → 自定义字段）
                 // 针对分类
