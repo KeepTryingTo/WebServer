@@ -230,6 +230,11 @@ OpenSSL​​ 是一个功能完备的、商业级的、开源的工具包，实
 
 [基于SSL实现的服务程序和浏览器建立连接](https://github.com/KeepTryingTo/openssl-client-server-WireShark/tree/main/ssl_https)
 
+```
+chmod +x generate_ssl.sh #可执行
+./generate_ssl.sh # 执行脚本生成证书
+```
+
 
 TCP协议和SSL/TLS协议握手过程
 ----------------------
