@@ -27,11 +27,11 @@ Linux下C++轻量级Web服务器，助力初学者快速实践网络编程，搭
 - [√] 实现了下载文件功能
 - [√] 美化了所有界面
 - [√] 服务器生成session id和保存cookie状态，过期时间设置为30分钟
+- [x] 浏览器调用摄像头
 - [√] 图像分类系统
 - [√] 目标检测系统
-- [√] 语义分割系统
 - [√] 优化文件分块上传模块（分离模块化）
-- [x] 浏览器调用摄像头
+- [√] SSL/TLS协议应用
 
 最小堆
 =============
@@ -215,6 +215,44 @@ pkg-config --modversion opencv4
 # 如果成功，应该输出 4.5.5
 ```
 [Linux下编写C++程序导入opencv编译并执行的几种方式（Linux/C++/OpenCV）](https://mydreamambitious.blog.csdn.net/article/details/148350287?spm=1011.2415.3001.5331)
+
+SSL/TLS协议应用
+======================
+OpenSSL库
+----------------------
+OpenSSL​​ 是一个功能完备的、商业级的、开源的工具包，实现了 ​​SSL（Secure Sockets Layer）​​ 和 ​​TLS（Transport Layer Security）​​ 协议。它提供了一个强大的通用密码学库，用于保护网络通信的安全。
+关于更多介绍请看我之前的一个代码链接[私钥和证书的生成以及给出几个实际抓包案例分析](https://github.com/KeepTryingTo/openssl-client-server-WireShark)
+
+
+私钥和证书生成
+----------------------
+[私钥和证书的生成以及给出几个实际抓包案例分析](https://github.com/KeepTryingTo/openssl-client-server-WireShark)（建议把这个链接里面的内容看完以及案例实际操作一遍之后再来看本项目使用的SSL/TLS协议）
+
+[基于SSL实现的服务程序和浏览器建立连接](https://github.com/KeepTryingTo/openssl-client-server-WireShark/tree/main/ssl_https)
+
+
+TCP协议和SSL/TLS协议握手过程
+----------------------
+![](./images/tcp_ssl.png)
+
+我们现在将其简化到和浏览器（客户端）建立SSL/TLS握手
+![](./images/browser_server_ssl.png)
+
+
+基于TCP + HTTP协议上传文件的抓包分析
+----------------------
+![](./images/tcp_http_wireshark.png)
+
+基于TCP + HTTPS协议上传文件的抓包分析
+----------------------
+![](./images/tcp_https_wireshark.png)
+
+查看证书
+----------------------
+![](./images/证书.png)
+
+
+结论：从上面的抓包结果来看，如果直接基于HTTP明文传输的话，抓到的上传文件信息都是直接可读的；而对于使用了HTTPS密文传输之后，传输的所有内容都是不可读的。
 
 Webbench压测
 =============

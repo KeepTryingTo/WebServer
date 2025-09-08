@@ -35,9 +35,10 @@ SRCS = main.cpp \
        ./deepLearning/classify/classification.cpp \
        ./deepLearning/objectDetect/objectDetection.cpp \
        ./http/upload_file.cpp \
-       ./deepLearning/segmentation/segmentation.cpp
+       ./deepLearning/segmentation/segmentation.cpp \
+       ./ssl/ssl_wrapper.cpp
 
-LIBS = -lpthread -lmysqlclient $(OPENCV_LIBS)
+LIBS = -lpthread -lmysqlclient $(OPENCV_LIBS) -lssl -lcrypto
 # 添加 OpenCV 头文件路径
 CXXFLAGS += $(OPENCV_INCLUDE)
 

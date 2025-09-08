@@ -3,45 +3,53 @@
 
 #include "webserver.h"
 
+#include <string>
 using namespace std;
 
 class Config
 {
 public:
     Config();
-    ~Config(){}; 
+    ~Config() {};
 
-    void parse_arg(int argc, char*argv[]);
+    void parse_arg(int argc, char *argv[]);
 
-    //端口号
+    // 端口号
     int PORT;
 
-    //日志写入方式
+    // 日志写入方式
     int LOGWrite;
 
-    //触发组合模式
+    // 触发组合模式
     int TRIGMode;
 
-    //listenfd触发模式 
+    // listenfd触发模式
     int LISTENTrigmode;
 
-    //connfd触发模式
+    // connfd触发模式
     int CONNTrigmode;
 
-    //优雅关闭链接
+    // 优雅关闭链接
     int OPT_LINGER;
 
-    //数据库连接池数量
+    // 数据库连接池数量
     int sql_num;
 
-    //线程池内的线程数量
+    // 线程池内的线程数量
     int thread_num;
 
-    //是否关闭日志
+    // 是否关闭日志
     int close_log;
 
-    //并发模型选择
+    // 并发模型选择
     int actor_model;
+
+    // 是否使用ssl / tls协议
+    bool use_ssl;
+    // 私钥文件.pem路径
+    std::string private_file;
+    // 私钥文件的证书.pem路径
+    std::string cert_file;
 };
 
 #endif
