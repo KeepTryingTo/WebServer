@@ -121,6 +121,11 @@ void http_conn::close_conn(bool real_close)
     // 关闭连接以及从epoll上移除事件
     if (real_close && (m_sockfd != -1))
     {
+        if (ssl_wrapper_)
+        {
+            ssl_wrapper_->shutdown();
+            ssl_wrapper_.reset(); // 释放SSLWrapper
+        }
         printf("close %d\n", m_sockfd);
         // 将对应的fd从epoll上面移除
         removefd(m_epollfd, m_sockfd);
@@ -131,7 +136,9 @@ void http_conn::close_conn(bool real_close)
 
 // 初始化连接,外部调用初始化套接字地址
 void http_conn::init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMode,
-                     int close_log, std::string user, std::string passwd, std::string sqlname)
+                     int close_log, std::string user, std::string passwd,
+                     std::string sqlname, bool use_ssl, std::shared_ptr<OpenSSLContext> opensslContext_,
+                     std::shared_ptr<SSLWrapper> ssl_wrapper)
 {
     m_sockfd = sockfd;
     m_address = addr;
@@ -145,6 +152,29 @@ void http_conn::init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMo
     m_TRIGMode = TRIGMode;   // 水平还是边缘触发模式
     m_close_log = close_log; // 是否关闭日志
     model_name = 0;
+    is_connect_success = false;
+
+    // ssl/tls协议
+    use_ssl_ = use_ssl;
+    ssl_wrapper_ = ssl_wrapper;
+    printf("%s %d http initialize successfully!\n", __FILE__, __LINE__);
+
+    if (use_ssl_)
+    {
+        try
+        {
+            is_connect_success = true;
+            printf("%s %d SSL/TLS connect successfully!\n", __FILE__, __LINE__);
+            LOG_ERROR("%s %d SSL/TLS connect successfully!", __FILE__, __LINE__);
+        }
+        catch (const std::exception &e)
+        {
+            LOG_ERROR("SSL initialization failed: %s", e.what());
+            is_connect_success = false;
+            close_conn();
+            return;
+        }
+    }
 
     strcpy(sql_user, user.c_str());
     strcpy(sql_passwd, passwd.c_str());
@@ -344,6 +374,7 @@ http_conn::LINE_STATUS http_conn::parse_line()
     {
         // temp为将要分析的字节
         temp = m_read_buf[m_checked_idx];
+        // printf("start parse line %s %d temp = %c\n", __FILE__, __LINE__, temp);
 
         // 如果当前是\r字符，则有可能会读取到完整行
         if (temp == '\r')
@@ -396,15 +427,33 @@ bool http_conn::read_once()
     // LT读取数据
     if (0 == m_TRIGMode)
     {
-        bytes_read = recv(m_sockfd, m_read_buf + m_read_idx,
-                          READ_BUFFER_SIZE - m_read_idx, 0);
+        if (use_ssl_ && is_connect_success)
+        {
+            try
+            {
+                bytes_read = ssl_wrapper_->read(m_read_buf + m_read_idx,
+                                                READ_BUFFER_SIZE - m_read_idx);
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << __FILE__ << " " << __LINE__ << " " << e.what() << '\n';
+                LOG_ERROR("%s %d %s", __FILE__, __LINE__, e.what());
+            }
+        }
+        else
+        {
+            bytes_read = recv(m_sockfd, m_read_buf + m_read_idx,
+                              READ_BUFFER_SIZE - m_read_idx, 0);
+        }
+        // printf("%s %d %s\n", __FILE__, __LINE__, m_read_buf);
+
         m_read_idx += bytes_read;
 
         if (bytes_read <= 0)
         {
             return false;
         }
-
+        // printf("%s %d  recv data is successfully\n", __FILE__, __LINE__);
         return true;
     }
     // ET读数据
@@ -413,8 +462,25 @@ bool http_conn::read_once()
         // ET模式只通知一次，因此要一次性将缓冲区中所有数据都读取出来
         while (true)
         {
-            bytes_read = recv(m_sockfd, m_read_buf + m_read_idx,
-                              READ_BUFFER_SIZE - m_read_idx, 0);
+            if (use_ssl_ && is_connect_success)
+            {
+                try
+                {
+                    bytes_read = ssl_wrapper_->read(m_read_buf + m_read_idx,
+                                                    READ_BUFFER_SIZE - m_read_idx);
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << __FILE__ << " " << __LINE__ << " " << e.what() << '\n';
+                    LOG_ERROR("%s %d %s", __FILE__, __LINE__, e.what());
+                }
+            }
+            else
+            {
+                bytes_read = recv(m_sockfd, m_read_buf + m_read_idx,
+                                  READ_BUFFER_SIZE - m_read_idx, 0);
+            }
+
             if (bytes_read == -1)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -684,6 +750,7 @@ http_conn::HTTP_CODE http_conn::process_read()
     {
         // 获得读缓冲区的位置
         text = get_line();
+        // printf("%s %d text = %s\n", __FILE__, __LINE__, text);
         // 更新读取的位置
         m_start_line = m_checked_idx;
         // 输出读取的内容
@@ -1385,6 +1452,8 @@ void http_conn::unmap()
 bool http_conn::write()
 {
     int temp = 0;
+    int ssl_write_total = 0;
+    bool is_error = false;
 
     if (bytes_to_send == 0)
     {
@@ -1397,47 +1466,62 @@ bool http_conn::write()
     // 其实这里发送信息也可以考虑使用“零拷贝技术”sendfile来实现
     while (1)
     {
-        // 使用 writev() 替代多次 write()，减少系统调用次数。
-        // m_iv 本身不存储数据，它只是记录了多个数据块的位置和长度
-        // 调用系统IO写操作（系统将 m_iv 描述的分散数据（iovec 结构数组）拷贝到内核的 套接字发送缓冲区）
-        temp = writev(m_sockfd, m_iv, m_iv_count);
-
-        if (temp < 0)
+        if (use_ssl_ && is_connect_success)
         {
-            // 数据发送完毕之后修改当前socket fd为监听写事件
-            if (errno == EAGAIN) // 该信号表示try  again，因为可能数据没有写完或者缓冲区满，因此需要epoll继续进行监听
+            try
             {
-                // 如果内核缓冲区已满，可能阻塞（默认行为）或返回部分写入（非阻塞模式）
-                modfd(m_epollfd, m_sockfd, EPOLLOUT, m_TRIGMode);
-                return true;
+                ssl_write_total = ssl_wrapper_->write(m_iv, m_iv_count);
             }
-            unmap(); // 文件发送完毕之后，关闭文件共享映射区
-            return false;
-        }
-
-        // 当前已发送的字节数
-        bytes_have_send += temp;
-        // 剩余多少字节数未发
-        bytes_to_send -= temp;
-
-        // 如果当前已发送的字节数大于了之前指定的m_write_idx位置，也就是头部信息发送完成，现在就是包体内容需要发送了
-        if (bytes_have_send >= m_iv[0].iov_len)
-        {
-            m_iv[0].iov_len = 0;
-            // 从共享文件映射区的地址的位置开始拷贝
-            m_iv[1].iov_base = m_file_address + (bytes_have_send - m_write_idx);
-            m_iv[1].iov_len = bytes_to_send;
+            catch (const std::exception &e)
+            {
+                is_error = true;
+                std::cerr << __FILE__ << " " << __LINE__ << " " << e.what() << '\n';
+                LOG_ERROR("%s %d %s", __FILE__, __LINE__, e.what());
+            }
+            bytes_to_send -= ssl_write_total;
         }
         else
         {
-            // 否则移动指针的位置
-            m_iv[0].iov_base = m_write_buf + bytes_have_send;
-            // 剩余要发送的字节数
-            m_iv[0].iov_len = m_iv[0].iov_len - bytes_have_send;
-        }
+            // 使用 writev() 替代多次 write()，减少系统调用次数。
+            // m_iv 本身不存储数据，它只是记录了多个数据块的位置和长度
+            // 调用系统IO写操作（系统将 m_iv 描述的分散数据（iovec 结构数组）拷贝到内核的 套接字发送缓冲区）
+            temp = writev(m_sockfd, m_iv, m_iv_count);
+            if (temp < 0)
+            {
+                // 数据发送完毕之后修改当前socket fd为监听写事件
+                if (errno == EAGAIN) // 该信号表示try  again，因为可能数据没有写完或者缓冲区满，因此需要epoll继续进行监听
+                {
+                    // 如果内核缓冲区已满，可能阻塞（默认行为）或返回部分写入（非阻塞模式）
+                    modfd(m_epollfd, m_sockfd, EPOLLOUT, m_TRIGMode);
+                    return true;
+                }
+                unmap(); // 文件发送完毕之后，关闭文件共享映射区
+                return false;
+            }
 
+            // 当前已发送的字节数
+            bytes_have_send += temp;
+            // 剩余多少字节数未发
+            bytes_to_send -= temp;
+
+            // 如果当前已发送的字节数大于了之前指定的m_write_idx位置，也就是头部信息发送完成，现在就是包体内容需要发送了
+            if (bytes_have_send >= m_iv[0].iov_len)
+            {
+                m_iv[0].iov_len = 0;
+                // 从共享文件映射区的地址的位置开始拷贝
+                m_iv[1].iov_base = m_file_address + (bytes_have_send - m_write_idx);
+                m_iv[1].iov_len = bytes_to_send;
+            }
+            else
+            {
+                // 否则移动指针的位置
+                m_iv[0].iov_base = m_write_buf + bytes_have_send;
+                // 剩余要发送的字节数
+                m_iv[0].iov_len = m_iv[0].iov_len - bytes_have_send;
+            }
+        }
         // 发送完成数据
-        if (bytes_to_send <= 0)
+        if (bytes_to_send <= 0 || is_error)
         {
             unmap();
             modfd(m_epollfd, m_sockfd, EPOLLIN, m_TRIGMode);
@@ -1648,6 +1732,7 @@ bool http_conn::process_write(HTTP_CODE ret)
 }
 void http_conn::process()
 {
+    // printf("start parse data %s %d\n", __FILE__, __LINE__);
     HTTP_CODE read_ret = process_read();
     // 如果解析的请求消息不完整就需要继续解析，修改当前的socket fd依然是监听读事件操作
     if (read_ret == NO_REQUEST)
@@ -1655,7 +1740,7 @@ void http_conn::process()
         modfd(m_epollfd, m_sockfd, EPOLLIN, m_TRIGMode);
         return;
     }
-    // printf("read ret = %d\n", read_ret);
+    // printf("start write data %s %d read ret = %d\\n", __FILE__, __LINE__, read_ret);
     bool write_ret = process_write(read_ret);
     // 如果读取出现问题，则关闭连接，并且注册写事件到epoll上，表示需要继续监听当前写事件
     if (!write_ret)

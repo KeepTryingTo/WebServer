@@ -37,6 +37,8 @@
 #include "../deepLearning/objectDetect/objectDetection.h"
 #include "upload_file.h"
 #include "../deepLearning/segmentation/segmentation.h"
+#include "../ssl/ssl_context.h"
+#include "../ssl/ssl_wrapper.h"
 
 struct session_info
 {
@@ -103,7 +105,10 @@ public:
 
 public:
     void init(int sockfd, const sockaddr_in &addr, char *, int, int,
-              string user, string passwd, string sqlname);
+              string user, string passwd, string sqlname, bool use_ssl,
+              std::shared_ptr<OpenSSLContext> opensslContext_,
+              std::shared_ptr<SSLWrapper> ssl_wrapper);
+
     void close_conn(bool real_close = true); // 默认为关闭状态
     void process();
     bool read_once();
@@ -246,6 +251,11 @@ private:
     bool is_segmentation;
     Segmentation g_seg;
     bool process_image_segmentation(const char *image_path);
+
+    // ssl/tls协议
+    std::shared_ptr<SSLWrapper> ssl_wrapper_; // 使用智能指针管理
+    bool use_ssl_;
+    bool is_connect_success;
 };
 
 #endif
