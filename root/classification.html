@@ -748,9 +748,9 @@
                 const end = Math.min(file.size, start + CHUNK_SIZE);
                 const chunk = file.slice(start, end);
 
-                console.log(`http://${window.location.host}/10${encodeURIComponent(file.name)}`);
+                console.log(`https://${window.location.host}/10${encodeURIComponent(file.name)}`);
                 try {
-                    const response = await fetch(`http://${window.location.host}/10${encodeURIComponent(file.name)}`, {
+                    const response = await fetch(`https://${window.location.host}/10${encodeURIComponent(file.name)}`, {
                         method: "POST",
                         body: chunk,
                         headers: {

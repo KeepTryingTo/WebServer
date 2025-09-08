@@ -833,7 +833,7 @@
 
                 try {
                     // 这里需要根据您的目标检测API调整URL和参数
-                    const response = await fetch(`http://${window.location.host}/12${encodeURIComponent(file.name)}`, {
+                    const response = await fetch(`https://${window.location.host}/12${encodeURIComponent(file.name)}`, {
                         method: "POST",
                         body: chunk,
                         headers: {

@@ -611,10 +611,10 @@
                 const end = Math.min(file.size, start + chunkSize);
                 // 对应的分块文件内容
                 const chunk = file.slice(start, end);
-                console.log("upload URL = " + `http://${window.location.host}/8${encodeURIComponent(file.name)}`);
+                console.log("upload URL = " + `https://${window.location.host}/8${encodeURIComponent(file.name)}`);
 
                 try {
-                    const response = await fetch(`http://${window.location.host}/8${encodeURIComponent(file.name)}`, {
+                    const response = await fetch(`https://${window.location.host}/8${encodeURIComponent(file.name)}`, {
 
                         method: "POST",
                         body: chunk,
