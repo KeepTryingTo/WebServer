@@ -223,6 +223,18 @@ OpenSSL库
 OpenSSL​​ 是一个功能完备的、商业级的、开源的工具包，实现了 ​​SSL（Secure Sockets Layer）​​ 和 ​​TLS（Transport Layer Security）​​ 协议。它提供了一个强大的通用密码学库，用于保护网络通信的安全。
 关于更多介绍请看我之前的一个代码链接[私钥和证书的生成以及给出几个实际抓包案例分析](https://github.com/KeepTryingTo/openssl-client-server-WireShark)
 
+编程接口（API）​​OpenSSL 通常书写步骤：
+* 初始化库​​：SSL_library_init()
+
+* 创建上下文（CTX）​​：SSL_CTX_new()，用于存储全局设置和证书。
+
+* 绑定 socket​​：将网络 socket 与 SSL 结构关联。
+
+* 执行 SSL/TLS 握手​​：SSL_connect()(客户端) 或 SSL_accept()(服务器)。
+
+* 安全通信​​：使用 SSL_read()和 SSL_write()替代普通的 read()和 write()。
+
+* 清理​​：关闭连接并释放资源。
 
 私钥和证书生成
 ----------------------
