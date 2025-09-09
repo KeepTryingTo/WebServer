@@ -4,6 +4,11 @@ TinyWebServer-v2
 ===============
 Linux下C++轻量级Web服务器，助力初学者快速实践网络编程，搭建属于自己的服务器.[原TinyWebServer源代码下载地址](https://github.com/qinguoyi/TinyWebServer)
 
+项目讲解
+==============
+[B站视频讲解](https://www.bilibili.com/video/BV1axtXzWEX6?spm_id_from=333.788.videopod.sections&vd_source=b2eaaddb2c69bf42517a2553af8444ab)
+[抖音平台视频讲解](https://www.douyin.com/collection/7545379588155639818/1)
+
 前置
 ===============
 其实在对TinyWebServer修改之后是否要开源出来其实是非常纠结的，倒不是说代码开不开源问题，而是TinyWebServer原作者的目的就是想要做一个尽量全而轻量的Web服务器，如果添加上传文件以及下载文件功能之后，会让代码变得更庞大，同时对于初学者或者我们自己在看的时候非常不利，这也违背了TinyWebServer原作者写这个项目的初心。本来是想和原作者沟通是否可以合并到分支里面，但是想了一下还是不要了，这样确实会让代码变得更臃肿和不友好，决定还是另起一个项目，这样大家可以根据自己的需求来学习这个项目。在改进，美化界面以及添加的功能的过程中我是借助了AI的，甚至你用AI可能搜出来的代码和我放在上面的一样。我主要的改进包括使用最小堆将原作者的双向链表给替换了，但是在进行压测的时候其实QPS都差不多；其次是将所有的界面给美化了，这部分需要自己有HTML,CSS,JAVAScript的基础（AI）;最后是添加了上传文件和下载文件的功能。
