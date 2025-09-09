@@ -355,6 +355,10 @@ Requests: 211143 susceed, 0 failed.
 
 * [QT 6.6.0中OpenCV三种环境的配置方法以及基本使用例子](https://mydreamambitious.blog.csdn.net/article/details/140998529?spm=1011.2415.3001.5331)
 
+* [linux上使用tcpdump工具抓包（基于TCP协议的客户端向服务端发送信息，以及使用SSL/TLS协议之后客户端向服务端发送信息）和wireshark工具分析抓包（linux/C/C++）](https://mydreamambitious.blog.csdn.net/article/details/150961257?spm=1011.2415.3001.5331)
+
+* [TinyWebServer-v2服务器新增SSL/TLS协议和Content-Encoding压缩，生成私钥和自签证书以及数据压缩，保证数据在传输的过程中是加密和提高传输的效率](https://blog.csdn.net/Keep_Trying_Go/article/details/151319144)
+
 庖丁解牛（来自原文）
 ------------
 近期版本迭代较快，以下内容多以旧版本(raw_version)代码为蓝本进行详解.
