@@ -4,11 +4,6 @@ TinyWebServer-v2
 ===============
 Linux下C++轻量级Web服务器，助力初学者快速实践网络编程，搭建属于自己的服务器.[原TinyWebServer源代码下载地址](https://github.com/qinguoyi/TinyWebServer)
 
-项目讲解
-==============
-[B站视频讲解](https://www.bilibili.com/video/BV1axtXzWEX6?spm_id_from=333.788.videopod.sections&vd_source=b2eaaddb2c69bf42517a2553af8444ab)
-[抖音平台视频讲解](https://www.douyin.com/collection/7545379588155639818/1)
-
 前置
 ===============
 其实在对TinyWebServer修改之后是否要开源出来其实是非常纠结的，倒不是说代码开不开源问题，而是TinyWebServer原作者的目的就是想要做一个尽量全而轻量的Web服务器，如果添加上传文件以及下载文件功能之后，会让代码变得更庞大，同时对于初学者或者我们自己在看的时候非常不利，这也违背了TinyWebServer原作者写这个项目的初心。本来是想和原作者沟通是否可以合并到分支里面，但是想了一下还是不要了，这样确实会让代码变得更臃肿和不友好，决定还是另起一个项目，这样大家可以根据自己的需求来学习这个项目。在改进，美化界面以及添加的功能的过程中我是借助了AI的，甚至你用AI可能搜出来的代码和我放在上面的一样。我主要的改进包括使用最小堆将原作者的双向链表给替换了，但是在进行压测的时候其实QPS都差不多；其次是将所有的界面给美化了，这部分需要自己有HTML,CSS,JAVAScript的基础（AI）;最后是添加了上传文件和下载文件的功能。
@@ -37,6 +32,9 @@ Linux下C++轻量级Web服务器，助力初学者快速实践网络编程，搭
 - [√] 目标检测系统
 - [√] 优化文件分块上传模块（分离模块化）
 - [√] SSL/TLS协议应用
+- [×] 支持实时性能监控
+- [√] 支持多种数据压缩格式
+- [×] WebSocket支持 
 
 最小堆
 =============
@@ -276,6 +274,134 @@ TCP协议和SSL/TLS协议握手过程
 
 结论：从上面的抓包结果来看，如果直接基于HTTP明文传输的话，抓到的上传文件信息都是直接可读的；而对于使用了HTTPS密文传输之后，传输的所有内容都是不可读的。
 
+数据压缩
+===================
+[zlib官网](http://zlib.net/)
+
+zlib旨在成为一个免费的、通用的、在法律上无障碍的——即不受任何专利限制的——无损数据压缩库，适用于几乎任何计算机硬件和操作系统。zlib的数据格式本身具有跨平台可移植性。与Unix系统compress(1)工具和GIF图像格式使用的LZW压缩方法不同，zlib当前采用的压缩方法基本上从不会使数据体积增大（LZW在极端情况下可能使文件大小翻倍甚至增至三倍）。zlib的内存占用也独立于输入数据，并且必要时可以通过降低压缩率来减少内存消耗（来自官方）。
+
+zlib库安装
+-------------------
+```
+方式一：
+    sudo apt update
+    sudo apt install zlib1g-dev  # 安装开发包，包含头文件和静态库
+
+方式二：
+    # 从官网下载源码 http://zlib.net/zlib-1.3.1.tar.gz
+    
+    tar -xvf zlib-1.3.tar.gz # 解压
+    cd zlib-1.3
+
+    # 配置、编译和安装
+    ./configure
+    make
+    sudo make install
+
+    # 默认安装路径是 /usr/local/lib，头文件在 /usr/local/include
+    # 系统可能会优先搜索 /usr/lib，如果需要让系统找到新安装的版本，可以运行：
+    sudo ldconfig
+
+```
+测试用例
+```
+g++ zlib_demo.cpp -o zlib_demo -lz
+./zlib_demo
+```
+
+
+[Google的压缩算法Brotli](https://github.com/google/brotli/tree/master)
+
+Brotli是Google开发的开源数据压缩算法，结合LZ77和Huffman编码，专为HTTP压缩优化，提供比gzip更高压缩比，显著提升网页加载速度，被主流浏览器和服务器广泛支持。
+
+Brotli库安装
+-------------------
+```
+方式一：
+      # 更新包列表
+      sudo apt update
+
+      # 安装 Brotli 开发库
+      sudo apt install libbrotli-dev
+
+      # 验证安装
+      pkg-config --modversion libbrotlienc
+
+方式二：
+      # 安装编译依赖
+      sudo apt install build-essential cmake git
+
+      # 下载 Brotli 源码
+      git clone https://github.com/google/brotli.git
+      cd brotli
+
+      # 创建构建目录
+      mkdir out && cd out
+
+      # 配置和编译
+      cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..
+      make -j$(nproc)
+
+      # 安装
+      sudo make install
+
+      # 更新动态库缓存
+      sudo ldconfig
+```
+代码测试
+-----------------
+```
+// test_brotli.cpp
+#include <brotli/encode.h>
+#include <iostream>
+#include <vector>
+
+int main() {
+    const char* input = "Hello, Brotli compression test!";
+    size_t input_size = strlen(input);
+    
+    // 估算最大输出大小
+    size_t max_output_size = BrotliEncoderMaxCompressedSize(input_size);
+    std::vector<uint8_t> output(max_output_size);
+    
+    size_t encoded_size = max_output_size;
+    BROTLI_BOOL result = BrotliEncoderCompress(
+        BROTLI_DEFAULT_QUALITY,
+        BROTLI_DEFAULT_WINDOW,
+        BROTLI_MODE_TEXT,
+        input_size,
+        reinterpret_cast<const uint8_t*>(input),
+        &encoded_size,
+        output.data());
+    
+    if (result == BROTLI_TRUE) {
+        std::cout << "Original size: " << input_size << " bytes\n";
+        std::cout << "Compressed size: " << encoded_size << " bytes\n";
+        std::cout << "Compression ratio: " 
+                  << (encoded_size * 100.0 / input_size) << "%\n";
+        return 0;
+    } else {
+        std::cerr << "Compression failed!\n";
+        return 1;
+    }
+}
+```
+
+对比有数据压缩和无数据压缩结果
+----------------------------
+![](./images/无数据压缩01.png)
+![](./images/有数据压缩01.png)
+无数据压缩（top）和有数据压缩（bottom）
+
+![](./images/无数据压缩02.png)
+![](./images/有数据压缩02.png)
+无数据压缩（top）和有数据压缩（bottom）
+
+![](./images/无数据压缩03.png)
+![](./images/有数据压缩03.png)
+无数据压缩（top）和有数据压缩（bottom）
+
+
 Webbench压测
 =============
 原理:
@@ -360,10 +486,6 @@ Requests: 211143 susceed, 0 failed.
 
 * [QT 6.6.0中OpenCV三种环境的配置方法以及基本使用例子](https://mydreamambitious.blog.csdn.net/article/details/140998529?spm=1011.2415.3001.5331)
 
-* [linux上使用tcpdump工具抓包（基于TCP协议的客户端向服务端发送信息，以及使用SSL/TLS协议之后客户端向服务端发送信息）和wireshark工具分析抓包（linux/C/C++）](https://mydreamambitious.blog.csdn.net/article/details/150961257?spm=1011.2415.3001.5331)
-
-* [TinyWebServer-v2服务器新增SSL/TLS协议和Content-Encoding压缩，生成私钥和自签证书以及数据压缩，保证数据在传输的过程中是加密和提高传输的效率](https://blog.csdn.net/Keep_Trying_Go/article/details/151319144)
-
 庖丁解牛（来自原文）
 ------------
 近期版本迭代较快，以下内容多以旧版本(raw_version)代码为蓝本进行详解.
@@ -382,6 +504,8 @@ Requests: 211143 susceed, 0 failed.
 * [最新版Web服务器项目详解 - 11 数据库连接池](https://mp.weixin.qq.com/s?__biz=MzAxNzU2MzcwMw==&mid=2649274326&idx=1&sn=5af78e2bf6552c46ae9ab2aa22faf839&chksm=83ffbe8eb4883798c3abb82ddd124c8100a39ef41ab8d04abe42d344067d5e1ac1b0cac9d9a3&token=1450918099&lang=zh_CN#rd)
 * [最新版Web服务器项目详解 - 12 注册登录](https://mp.weixin.qq.com/s?__biz=MzAxNzU2MzcwMw==&mid=2649274431&idx=4&sn=7595a70f06a79cb7abaebcd939e0cbee&chksm=83ffb167b4883871ce110aeb23e04acf835ef41016517247263a2c3ab6f8e615607858127ea6&token=1686112912&lang=zh_CN#rd)
 * [最新版Web服务器项目详解 - 13 踩坑与面试题](https://mp.weixin.qq.com/s?__biz=MzAxNzU2MzcwMw==&mid=2649274431&idx=1&sn=2dd28c92f5d9704a57c001a3d2630b69&chksm=83ffb167b48838715810b27b8f8b9a576023ee5c08a8e5d91df5baf396732de51268d1bf2a4e&token=1686112912&lang=zh_CN#rd)
+
+* [zlib的简单介绍和使用](https://www.cnblogs.com/dwinternet/p/18989624)
 
 CPP11实现
 ------------

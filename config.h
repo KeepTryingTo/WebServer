@@ -50,6 +50,8 @@ public:
     std::string private_file;
     // 私钥文件的证书.pem路径
     std::string cert_file;
+
+    bool is_compress;
 };
 
 #endif

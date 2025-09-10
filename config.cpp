@@ -38,6 +38,9 @@ Config::Config()
     private_file = "/home/ubuntu/Documents/KTG/myPro/myProject/myTinyWebServer-v2/server.key";
     // 私钥文件的证书.pem路径
     cert_file = "/home/ubuntu/Documents/KTG/myPro/myProject/myTinyWebServer-v2/server.crt";
+
+    // 是否使用压缩算法
+    is_compress = true;
 }
 
 void Config::parse_arg(int argc, char *argv[])

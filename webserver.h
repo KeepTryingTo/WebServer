@@ -30,7 +30,8 @@ public:
     void init(int port, string user, string passWord, string databaseName,
               int log_write, int opt_linger, int trigmode, int sql_num,
               int thread_num, int close_log, int actor_model,
-              bool use_ssl, std::string cert_file, std::string private_file);
+              bool use_ssl, std::string cert_file, std::string private_file,
+              bool is_compress);
 
     // 创建线程池
     void thread_pool();
@@ -91,5 +92,8 @@ public:
     // SSL上下文初始化
     std::shared_ptr<OpenSSLContext> opensslContext_;
     std::map<int, std::shared_ptr<SSLWrapper>> fd_sslwrappers;
+
+    // 是否进行数据压缩
+    bool is_compress_;
 };
 #endif

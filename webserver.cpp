@@ -32,7 +32,8 @@ WebServer::~WebServer()
 
 void WebServer::init(int port, string user, string passWord, string databaseName, int log_write,
                      int opt_linger, int trigmode, int sql_num, int thread_num, int close_log,
-                     int actor_model, bool use_ssl, std::string cert_file, std::string private_file)
+                     int actor_model, bool use_ssl, std::string cert_file, std::string private_file,
+                     bool is_compress)
 {
     m_port = port;
     m_user = user;
@@ -45,6 +46,7 @@ void WebServer::init(int port, string user, string passWord, string databaseName
     m_TRIGMode = trigmode;
     m_close_log = close_log;
     m_actormodel = actor_model;
+    is_compress_ = is_compress;
 
     // 确保上传目录存在
     char upload_path[200];
@@ -209,14 +211,15 @@ void WebServer::timer(int connfd, struct sockaddr_in client_address)
         // 建立HTTP连接
         users[connfd].init(connfd, client_address, m_root, m_CONNTrigmode,
                            m_close_log, m_user, m_passWord, m_databaseName,
-                           use_ssl_, opensslContext_, fd_sslwrappers[connfd]);
+                           use_ssl_, opensslContext_, fd_sslwrappers[connfd],
+                           is_compress_);
     }
     else
     {
         // 建立HTTP连接
         users[connfd].init(connfd, client_address, m_root, m_CONNTrigmode,
                            m_close_log, m_user, m_passWord, m_databaseName,
-                           use_ssl_, opensslContext_, nullptr);
+                           use_ssl_, opensslContext_, nullptr, is_compress_);
     }
 
     // 初始化client_data数据

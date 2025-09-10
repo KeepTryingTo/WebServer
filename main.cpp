@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     server.init(config.PORT, user, passwd, databasename, config.LOGWrite,
                 config.OPT_LINGER, config.TRIGMode, config.sql_num, config.thread_num,
                 config.close_log, config.actor_model, config.use_ssl,
-                config.cert_file, config.private_file);
+                config.cert_file, config.private_file, config.is_compress);
 
     std::cout << "✅ 服务器初始化成功" << std::endl;
     std::cout << "🌐 服务器启动中..." << std::endl;

@@ -21,7 +21,13 @@ OPENCV_LIBS := -L/usr/local/lib \
                -lopencv_features2d \
                -lopencv_video \
                -lopencv_videoio \
-               -lopencv_calib3d 
+               -lopencv_calib3d \
+               -lbrotlienc \
+               -lbrotlicommon \
+               -lbrotlidec \
+               -lz \
+               -lssl \
+               -lcrypto
 
 
 SRCS = main.cpp \
@@ -36,7 +42,9 @@ SRCS = main.cpp \
        ./deepLearning/objectDetect/objectDetection.cpp \
        ./http/upload_file.cpp \
        ./deepLearning/segmentation/segmentation.cpp \
-       ./ssl/ssl_wrapper.cpp
+       ./ssl/ssl_wrapper.cpp \
+       ./compressor/content_compressor.cpp \
+       ./monitor/monitor_system.cpp
 
 LIBS = -lpthread -lmysqlclient $(OPENCV_LIBS) -lssl -lcrypto
 # 添加 OpenCV 头文件路径
