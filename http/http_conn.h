@@ -39,6 +39,8 @@
 #include "../deepLearning/segmentation/segmentation.h"
 #include "../ssl/ssl_context.h"
 #include "../ssl/ssl_wrapper.h"
+#include "../compressor/content_compressor.h"
+#include "../monitor/http_conn_monitor_system.h"
 
 struct session_info
 {
@@ -107,7 +109,8 @@ public:
     void init(int sockfd, const sockaddr_in &addr, char *, int, int,
               string user, string passwd, string sqlname, bool use_ssl,
               std::shared_ptr<OpenSSLContext> opensslContext_,
-              std::shared_ptr<SSLWrapper> ssl_wrapper);
+              std::shared_ptr<SSLWrapper> ssl_wrapper,
+              bool is_compress);
 
     void close_conn(bool real_close = true); // 默认为关闭状态
     void process();
@@ -256,6 +259,15 @@ private:
     std::shared_ptr<SSLWrapper> ssl_wrapper_; // 使用智能指针管理
     bool use_ssl_;
     bool is_connect_success;
+
+    // 数据压缩
+    ContentCompressor compressor_;
+    bool is_compress_;
+    std::string m_accept_encoding;
+
+    // 信息控制面板
+    bool is_admin_system;
+    HttpConnMonitorAdapter monitor_adapter_{MonitorSystem::instance()};
 };
 
 #endif

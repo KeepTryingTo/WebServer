@@ -126,6 +126,7 @@ void http_conn::close_conn(bool real_close)
             ssl_wrapper_->shutdown();
             ssl_wrapper_.reset(); // 释放SSLWrapper
         }
+        monitor_adapter_.on_connection_end();
         printf("close %d\n", m_sockfd);
         // 将对应的fd从epoll上面移除
         removefd(m_epollfd, m_sockfd);
@@ -138,7 +139,7 @@ void http_conn::close_conn(bool real_close)
 void http_conn::init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMode,
                      int close_log, std::string user, std::string passwd,
                      std::string sqlname, bool use_ssl, std::shared_ptr<OpenSSLContext> opensslContext_,
-                     std::shared_ptr<SSLWrapper> ssl_wrapper)
+                     std::shared_ptr<SSLWrapper> ssl_wrapper, bool is_compress)
 {
     m_sockfd = sockfd;
     m_address = addr;
@@ -182,6 +183,13 @@ void http_conn::init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMo
 
     // 对所有成员变量进行初始化
     init();
+
+    is_compress_ = is_compress;
+    if (is_compress_)
+    {
+        printf("Compress data has been started!");
+        LOG_INFO("Compress data has been started!");
+    }
 }
 
 // 初始化新接受的连接
@@ -219,6 +227,11 @@ void http_conn::init()
     conf_threshold = 0;
     is_response_result = false;
     is_objectDetect = false;
+    compressor_.reset();
+    is_compress_ = false;
+    is_admin_system = false;
+
+    monitor_adapter_.on_connection_start();
 
     memset(m_read_buf, '\0', READ_BUFFER_SIZE);
     memset(m_write_buf, '\0', WRITE_BUFFER_SIZE);
@@ -447,6 +460,11 @@ bool http_conn::read_once()
         }
         // printf("%s %d %s\n", __FILE__, __LINE__, m_read_buf);
 
+        if (bytes_read > 0)
+        {
+            monitor_adapter_.on_data_read(bytes_read);
+        }
+
         m_read_idx += bytes_read;
 
         if (bytes_read <= 0)
@@ -663,6 +681,13 @@ http_conn::HTTP_CODE http_conn::parse_headers(char *text)
         // 格式为：640（不是640x640这样格式）
         imageHW = std::string(text);
         LOG_INFO("Got image width and height: %s", imageHW.c_str());
+    } // 在 parse_headers 方法中添加
+    else if (strncasecmp(text, "Accept-Encoding:", 16) == 0)
+    {
+        text += 16;
+        text += strspn(text, " \t");
+        m_accept_encoding = text;
+        LOG_INFO("Accept-Encoding: %s", m_accept_encoding.c_str());
     }
     else if (strncasecmp(text, "Cookie:", 7) == 0)
     {
@@ -1213,7 +1238,26 @@ http_conn::HTTP_CODE http_conn::do_request()
             }
         }
     }
-    if (*(p + 1) == '0')
+    if (strncasecmp(m_url, "/admin/metrics", 14) == 0)
+    {
+        add_status_line(200, ok_200_title);
+        add_headers(MonitorSystem::instance().get_metrics_json().size());
+        add_response("Content-Type: application/json\r\n");
+        add_blank_line();
+
+        add_content(MonitorSystem::instance().get_metrics_json().c_str());
+        return NO_RESOURCE;
+    }
+    else if (strncasecmp(m_url, "/admin", 6) == 0)
+    {
+        char *m_url_real = (char *)malloc(sizeof(char) * 200);
+        // 进入注册页面进程注册
+        strcpy(m_url_real, "/admin.html");
+        strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
+
+        free(m_url_real);
+    }
+    else if (*(p + 1) == '0')
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
         // 进入注册页面进程注册
@@ -1479,6 +1523,11 @@ bool http_conn::write()
                 LOG_ERROR("%s %d %s", __FILE__, __LINE__, e.what());
             }
             bytes_to_send -= ssl_write_total;
+
+            if (ssl_write_total > 0)
+            {
+                monitor_adapter_.on_data_written(temp);
+            }
         }
         else
         {
@@ -1497,6 +1546,11 @@ bool http_conn::write()
                 }
                 unmap(); // 文件发送完毕之后，关闭文件共享映射区
                 return false;
+            }
+
+            if (temp > 0)
+            {
+                monitor_adapter_.on_data_written(temp);
             }
 
             // 当前已发送的字节数
@@ -1649,10 +1703,47 @@ bool http_conn::process_write(HTTP_CODE ret)
             m_need_set_cookie = false;
         }
 
+        // 数据压缩相关
+        // 获取文件扩展名
+        std::string file_path(m_real_file);
+        size_t dot_pos = file_path.find_last_of('.');
+        std::string file_extension = (dot_pos != std::string::npos) ? file_path.substr(dot_pos + 1) : "";
+
+        // 检查并执行压缩
+        if (is_compress_ && compressor_.should_compress(file_extension, m_accept_encoding))
+        {
+            // 优先尝试 Brotli
+            if (m_accept_encoding.find("br") != std::string::npos)
+            {
+                if (compressor_.compress(m_file_address, m_file_stat.st_size,
+                                         ContentCompressor::BROTLI))
+                {
+                    add_response(compressor_.content_encoding_header().c_str());
+                }
+            }
+            else if (m_accept_encoding.find("gzip") != std::string::npos)
+            {
+                if (compressor_.compress(m_file_address, m_file_stat.st_size,
+                                         ContentCompressor::GZIP))
+                {
+                    add_response(compressor_.content_encoding_header().c_str());
+                }
+            }
+            else if (m_accept_encoding.find("deflate") != std::string::npos)
+            {
+                if (compressor_.compress(m_file_address, m_file_stat.st_size,
+                                         ContentCompressor::DEFLATE))
+                {
+                    add_response(compressor_.content_encoding_header().c_str());
+                }
+            }
+        }
+
         // 文件大小不为0（确实有信息需要发送）
         if (m_file_stat.st_size != 0)
         {
-            add_headers(m_file_stat.st_size);
+            size_t content_length = compressor_.compressed_size() > 0 && is_compress_ ? compressor_.compressed_size() : m_file_stat.st_size;
+            add_headers(content_length);
             // 针对图像分类
             if (is_objectDetect == false && is_segmentation == false)
             {
@@ -1700,8 +1791,18 @@ bool http_conn::process_write(HTTP_CODE ret)
             m_iv[0].iov_len = m_write_idx;
 
             // 第二个iovec指针指向mmap返回的文件指针(比如.html文件之类的文件内容)，长度指向文件大小
-            m_iv[1].iov_base = m_file_address;
-            m_iv[1].iov_len = m_file_stat.st_size;
+            if (compressor_.compressed_size() > 0 && is_compress_)
+            {
+                // 使用压缩后的数据
+                m_iv[1].iov_base = (void *)compressor_.compressed_data().data();
+                m_iv[1].iov_len = compressor_.compressed_size();
+            }
+            else
+            {
+                // 使用原始文件数据
+                m_iv[1].iov_base = m_file_address;
+                m_iv[1].iov_len = m_file_stat.st_size;
+            }
             m_iv_count = 2;
             // 发送的全部数据为响应报文头部信息和文件大小
             bytes_to_send = m_write_idx + m_file_stat.st_size;
@@ -1732,6 +1833,7 @@ bool http_conn::process_write(HTTP_CODE ret)
 }
 void http_conn::process()
 {
+    monitor_adapter_.on_request_start(m_method);
     // printf("start parse data %s %d\n", __FILE__, __LINE__);
     HTTP_CODE read_ret = process_read();
     // 如果解析的请求消息不完整就需要继续解析，修改当前的socket fd依然是监听读事件操作
@@ -1742,6 +1844,8 @@ void http_conn::process()
     }
     // printf("start write data %s %d read ret = %d\\n", __FILE__, __LINE__, read_ret);
     bool write_ret = process_write(read_ret);
+
+    monitor_adapter_.on_request_end(read_ret, is_connect_success);
     // 如果读取出现问题，则关闭连接，并且注册写事件到epoll上，表示需要继续监听当前写事件
     if (!write_ret)
     {
