@@ -4,6 +4,10 @@ TinyWebServer-v2
 ===============
 Linux下C++轻量级Web服务器，助力初学者快速实践网络编程，搭建属于自己的服务器.[原TinyWebServer源代码下载地址](https://github.com/qinguoyi/TinyWebServer)
 
+[Bilibili视频讲解](https://www.bilibili.com/video/BV1axtXzWEX6?vd_source=b2eaaddb2c69bf42517a2553af8444ab&spm_id_from=333.788.videopod.sections)
+
+[Douyin视频讲解](https://www.douyin.com/collection/7545379588155639818/1)
+
 前置
 ===============
 其实在对TinyWebServer修改之后是否要开源出来其实是非常纠结的，倒不是说代码开不开源问题，而是TinyWebServer原作者的目的就是想要做一个尽量全而轻量的Web服务器，如果添加上传文件以及下载文件功能之后，会让代码变得更庞大，同时对于初学者或者我们自己在看的时候非常不利，这也违背了TinyWebServer原作者写这个项目的初心。本来是想和原作者沟通是否可以合并到分支里面，但是想了一下还是不要了，这样确实会让代码变得更臃肿和不友好，决定还是另起一个项目，这样大家可以根据自己的需求来学习这个项目。在改进，美化界面以及添加的功能的过程中我是借助了AI的，甚至你用AI可能搜出来的代码和我放在上面的一样。我主要的改进包括使用最小堆将原作者的双向链表给替换了，但是在进行压测的时候其实QPS都差不多；其次是将所有的界面给美化了，这部分需要自己有HTML,CSS,JAVAScript的基础（AI）;最后是添加了上传文件和下载文件的功能。
@@ -32,7 +36,7 @@ Linux下C++轻量级Web服务器，助力初学者快速实践网络编程，搭
 - [√] 目标检测系统
 - [√] 优化文件分块上传模块（分离模块化）
 - [√] SSL/TLS协议应用
-- [×] 支持实时性能监控
+- [√] 支持实时性能监控
 - [√] 支持多种数据压缩格式
 - [×] WebSocket支持 
 
@@ -485,6 +489,10 @@ Requests: 211143 susceed, 0 failed.
 * [深度学习之图像和目标检测模型基于pnnx工具转ncnn部署于Android入门 （四），案例实战值得一看（PyTorch，Android Studio，NCNN，PNNX）](https://mydreamambitious.blog.csdn.net/article/details/142588623?spm=1011.2415.3001.5331)
 
 * [QT 6.6.0中OpenCV三种环境的配置方法以及基本使用例子](https://mydreamambitious.blog.csdn.net/article/details/140998529?spm=1011.2415.3001.5331)
+
+* [TinyWebServer-v2服务器新增SSL/TLS协议和Content-Encoding字段指定压缩格式，生成私钥和自签证书以及数据压缩，保证数据在传输的过程中是加密和提高传输的效率](https://blog.csdn.net/Keep_Trying_Go/article/details/151319144)
+
+* [linux上使用tcpdump工具抓包（基于TCP协议的客户端向服务端发送信息，以及使用SSL/TLS协议之后客户端向服务端发送信息）和wireshark工具分析抓包（linux/C/C++）](https://mydreamambitious.blog.csdn.net/article/details/150961257?spm=1011.2415.3001.5331)
 
 庖丁解牛（来自原文）
 ------------
