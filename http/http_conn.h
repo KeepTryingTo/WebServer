@@ -41,6 +41,7 @@
 #include "../ssl/ssl_wrapper.h"
 #include "../compressor/content_compressor.h"
 #include "../monitor/http_conn_monitor_system.h"
+#include "../session/session.h"
 
 struct session_info
 {
@@ -214,7 +215,6 @@ private:
 
     // session  + cookie
     static map<std::string, session_info> sessions;
-    static locker session_lock;
     std::string m_session_id;
     bool m_is_logged_in;
     char m_session_id_buf[65];
@@ -223,12 +223,11 @@ private:
     set<std::string> sessions_st;
 
     // 关于session id生成，验证以及管理模块
-    std::string generate_session_id();
-    bool create_session(const std::string &username);
-    bool validate_session(const std::string &session_id);
-    void destroy_session(const std::string &session_id);
-    bool add_session_cookie();
-    static void cleanup_expired_sessions();
+    enhanced_session_info current_session_;
+    std::string client_ip_;
+    std::string user_agent_;
+    bool create_enhanced_session(const std::string &username);
+    bool validate_enhanced_session(const std::string &session_id);
 
     // 图像分类模块
     Classification g_cls;

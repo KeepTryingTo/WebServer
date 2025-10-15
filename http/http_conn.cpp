@@ -22,7 +22,6 @@ map<std::string, std::string> users;
 
 // 静态成员初始化
 map<std::string, session_info> http_conn::sessions;
-locker http_conn::session_lock;
 
 void http_conn::initmysql_result(connection_pool *connPool)
 {
@@ -190,6 +189,9 @@ void http_conn::init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMo
         printf("Compress data has been started!");
         LOG_INFO("Compress data has been started!");
     }
+
+    // 获取客户端IP和端口
+    client_ip_ = inet_ntoa(addr.sin_addr);
 }
 
 // 初始化新接受的连接
@@ -238,136 +240,36 @@ void http_conn::init()
     memset(m_real_file, '\0', FILENAME_LEN);
 }
 
-/**
- * @brief 生成安全的随机Session ID
- *
- * 使用密码学安全的随机数生成器创建16字节随机数，
- * 并将其转换为32字符的十六进制字符串格式
- *
- * @return std::string 32字符的十六进制Session ID（如"a1b2c3d4e5f6..."）
- *
- * @note 实现细节：
- * 1. 使用std::random_device获取硬件熵源（如果可用）
- * 2. 生成16字节（128位）随机数，满足密码学强度要求
- * 3. 转换为HEX格式避免二进制数据在传输中出现问题
- * 4. 输出示例：将字节{0xAB,0xCD...}转换为字符串"abcd..."
- */
-std::string http_conn::generate_session_id()
+// 增强的session创建
+bool http_conn::create_enhanced_session(const std::string &username)
 {
-    // 16字节随机数缓冲区（128位）
-    std::array<unsigned char, 16> bytes{};
-    // 使用硬件熵源初始化随机数生成器
-    std::random_device rd;
-    // 填充随机字节（保留低8位）
-    for (auto &b : bytes)
-    {
-        b = static_cast<unsigned char>(rd() & 0xFF);
-    }
-    // HEX转换表（小写字母）
-    static const char *hex_chars = "0123456789abcdef";
-    // 预分配32字符缓冲区
-    std::string session_id;
-    session_id.resize(32);
-    // 将每个字节转为两个HEX字符
-    for (size_t i = 0; i < bytes.size(); i++)
-    {
-        session_id[i * 2] = hex_chars[bytes[i] >> 4];       // 高4位
-        session_id[i * 2 + 1] = hex_chars[bytes[i] & 0x0F]; // 低4位
-    }
-    return session_id;
-}
+    /*
+    User-Agent是浏览器发送到服务器的特殊字符串，用于标识客户端的硬件和软件配置，包括浏览器类型、版本、操作系统等信息。
+    */
+    std::string session_id = SessionManager::instance().create_session(
+        username, client_ip_, ntohs(m_address.sin_port), user_agent_);
 
-bool http_conn::create_session(const std::string &username)
-{
-
-    session_lock.lock();
-    try
+    if (!session_id.empty())
     {
-
-        if (m_has_session && strlen(m_session_id_buf) > 0)
-        {
-            std::string session_id(m_session_id_buf);
-            printf("strlen(session id) = %d\n", session_id.size());
-            printf("%s %d session id = %s\n", __FILE__, __LINE__, session_id.c_str());
-            sessions[session_id] = session_info(username);
-            sessions_st.insert(session_id);
-            m_session_id = session_id; // 其实在解析头部信息的时候就赋值过了，这里只是重复的赋值一遍
-        }
-        else
-        {
-            std::string session_id = generate_session_id();
-            printf("%s %d session id = %s\n", __FILE__, __LINE__, session_id.c_str());
-            sessions[session_id] = session_info(username);
-            m_session_id = session_id;
-            sessions_st.insert(session_id);
-            m_has_session = true;
-            m_need_set_cookie = true;
-        }
-        session_lock.unlock();
+        m_session_id = session_id;
+        m_has_session = true;
+        m_need_set_cookie = true;
+        current_session_ = SessionManager::instance().get_session(session_id);
         return true;
     }
-    catch (...)
-    {
-        // std::cout<<"username = "<<username<<std::endl;
-        printf("%s %d throw ERROR and username = %s\n", __FILE__, __LINE__, username.c_str());
-        session_lock.unlock();
-        return false;
-    }
     return false;
 }
 
-bool http_conn::validate_session(const std::string &session_id)
+// 增强的session验证
+bool http_conn::validate_enhanced_session(const std::string &session_id)
 {
-    session_lock.lock();
-    auto it = sessions.find(session_id);
-    if (it != sessions.end() && it->second.is_valid)
+    if (SessionManager::instance().validate_session(session_id, client_ip_, user_agent_))
     {
-        // 检查session id是否过期（是否超过规定的30分钟）
-        time_t now = time(NULL);
-        if (now - (it->second).last_access < 1800)
-        {
-            it->second.last_access = now;
-            session_lock.unlock();
-            return true;
-        }
-        else
-        {
-            // 否则删除过期的session id
-            sessions.erase(it);
-        }
+        current_session_ = SessionManager::instance().get_session(session_id);
+        m_is_logged_in = true;
+        return true;
     }
-    session_lock.unlock();
     return false;
-}
-
-void http_conn::destroy_session(const std::string &session_id)
-{
-    session_lock.lock();
-    sessions.erase(session_id);
-    session_lock.unlock();
-
-    m_session_id = "";
-    m_is_logged_in = false;
-}
-
-// 定期清理过期的session id
-void http_conn::cleanup_expired_sessions()
-{
-    session_lock.lock();
-    time_t now = time(NULL);
-    auto it = sessions.begin();
-    while (it != sessions.end())
-    {
-        if (now - (it->second.last_access) > 1800)
-        {
-            it = sessions.erase(it);
-        }
-        else
-        {
-            it++;
-        }
-    }
-    session_lock.unlock();
 }
 
 // 从状态机，用于分析出一行内容
@@ -689,6 +591,14 @@ http_conn::HTTP_CODE http_conn::parse_headers(char *text)
         m_accept_encoding = text;
         LOG_INFO("Accept-Encoding: %s", m_accept_encoding.c_str());
     }
+    // 在parse_headers方法中添加
+    else if (strncasecmp(text, "User-Agent:", 11) == 0)
+    {
+        text += 11;
+        text += strspn(text, " \t");
+        user_agent_ = text;
+        LOG_INFO("User-Agent: %s", user_agent_.c_str());
+    }
     else if (strncasecmp(text, "Cookie:", 7) == 0)
     {
         // text 形如 "Cookie: a=1; session_id=abcd...; b=2"
@@ -1008,7 +918,7 @@ http_conn::HTTP_CODE http_conn::do_request()
     {
         std::string session_id(m_session_id_buf);
         printf("%s %d session id = %s\n", __FILE__, __LINE__, m_session_id.c_str());
-        if (validate_session(session_id))
+        if (validate_enhanced_session(session_id))
         {
             m_is_logged_in = true;
         }
@@ -1017,7 +927,7 @@ http_conn::HTTP_CODE http_conn::do_request()
             // 验证失败时的处理
             m_is_logged_in = false;
             // 1. 清除无效的session
-            destroy_session(session_id);
+            session_id.clear();
             // 2. 清除客户端的cookie (设置过期时间为过去)
             add_response("Set-Cookie: session_id=; Path=/; Expires=Thu, 01-Jan-1970 00:00:00 GMT\r\n");
             // 3. 可以重定向到登录页面并显示提示信息
@@ -1212,19 +1122,16 @@ http_conn::HTTP_CODE http_conn::do_request()
         }
         // 如果是登录，直接判断
         // 若浏览器端输入的用户名和密码在表中可以查找到，返回1，否则返回0
+        // 在do_request方法中修改登录部分
         else if (*(p + 1) == '2')
         {
-            // if (users.find(name) != users.end() && users[name] == password)
-            //     strcpy(m_url, "/welcome.html");
-            // else
-            //     strcpy(m_url, "/logError.html");
-
             if (users.find(name) != users.end() && users[name] == password)
             {
-                // 登录成功，创建session id
-                if (create_session(name))
+                // 使用增强的session创建
+                if (create_enhanced_session(name))
                 {
-                    printf("%s %d session id = %s\n", __FILE__, __LINE__, m_session_id.c_str());
+                    LOG_INFO("User %s logged in successfully from %s",
+                             name, client_ip_.c_str());
                     strcpy(m_url, "/welcome.html");
                 }
                 else
@@ -1430,8 +1337,7 @@ http_conn::HTTP_CODE http_conn::do_request()
         // 添加一个登出功能，添加登出路由(既然登出之后，那么对应的cookie也就没有必要保存了)
         if (!m_session_id.empty())
         {
-            // 销毁session并清除cookie
-            destroy_session(m_session_id);
+            SessionManager::instance().destroy_session(m_session_id);
             // 添加清除cookie的头部
             add_response("Set-Cookie: session_id=; Path=/; Expires=Thu, 01-Jan 1970 00:00:00 GMT\r\n");
         }
